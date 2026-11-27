@@ -37,6 +37,10 @@ export async function signUp(_: AuthState, formData: FormData): Promise<AuthStat
     },
   });
   if (error) return { error: translate(error.message) };
+  // E-mail já cadastrado: o Supabase responde "sucesso" sem sessão e sem identidades.
+  if (data.user && (data.user.identities?.length ?? 0) === 0) {
+    return { error: "Este e-mail já tem conta. Use \"Entrar\"." };
+  }
   // Com "Confirm email" ligado no Supabase, a sessão só existe depois do clique no e-mail.
   if (!data.session) {
     return {
