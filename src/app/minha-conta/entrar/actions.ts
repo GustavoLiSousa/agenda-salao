@@ -11,6 +11,8 @@ export type ClientAuthState = { error?: string; sentTo?: string };
 export async function afterCodeLogin(next: string) {
   const supabase = await createClient();
   const { data } = await supabase.auth.getUser();
+  // Recuperação de senha da gestão: vai direto para "nova senha".
+  if (next.startsWith("/minha-conta/criar-senha")) return next;
   if (data.user) {
     // Dono ou profissional do salão já tem senha (a mesma do painel): não pede outra.
     const { count } = await supabase
@@ -34,6 +36,8 @@ function translate(message: string) {
   if (/should be different/i.test(message)) return "Essa já é a sua senha atual.";
   if (/password should be|weak/i.test(message)) return "Senha fraca. Use pelo menos 6 letras ou números.";
   if (/expired|invalid/i.test(message)) return "Código inválido ou vencido. Confira ou peça um novo.";
+  if (/signups not allowed for otp|user not found/i.test(message))
+    return "Não encontramos uma conta com esse e-mail. Confira se digitou certo.";
   if (/signups not allowed/i.test(message)) return "Cadastro de novas contas está desligado no momento.";
   return message;
 }
@@ -64,7 +68,8 @@ export async function sendCode(_: ClientAuthState, formData: FormData): Promise<
   const { error } = await supabase.auth.signInWithOtp({
     email,
     options: {
-      shouldCreateUser: true,
+      // "Esqueci minha senha" da gestão não cria conta nova.
+      shouldCreateUser: formData.get("recover") !== "1",
       emailRedirectTo: `${await origin()}/auth/callback?next=${encodeURIComponent(next)}`,
     },
   });

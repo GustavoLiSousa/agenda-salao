@@ -3,6 +3,7 @@ import { redirect } from "next/navigation";
 import { createClient, isSupabaseConfigured } from "@/lib/supabase/server";
 import { safeNext } from "@/lib/client-area";
 import { ClientLogin } from "@/app/minha-conta/entrar/client-login";
+import { BrandMark } from "@/components/brand-mark";
 import { AuthForm } from "./auth-form";
 
 export const dynamic = "force-dynamic";
@@ -52,13 +53,22 @@ export default async function EntrarPage({
 
       <div className="mx-auto flex w-full max-w-sm flex-1 flex-col justify-center px-6 py-10">
         <div className="flex flex-col items-center text-center">
-          <span className="relative flex h-16 w-16 items-center justify-center rounded-2xl border border-brand-300/30 bg-gradient-to-b from-stone-800 to-stone-900 font-display text-3xl font-semibold text-brand-300 shadow-[0_10px_40px_-10px_rgba(214,181,125,0.45)]">
-            A
+          <span className="relative flex h-20 w-20 items-center justify-center rounded-[1.6rem] border border-brand-300/25 bg-gradient-to-b from-stone-800/90 to-stone-950 shadow-[0_14px_50px_-12px_rgba(214,181,125,0.5)]">
+            <BrandMark className="h-16 w-16" title="Agenda Salão" />
           </span>
-          <p className="mt-6 text-[11px] font-medium uppercase tracking-[0.32em] text-brand-300/80">Agenda Salão</p>
-          <h1 className="mt-2 font-display text-4xl font-semibold tracking-tight">
-            {cliente ? "Meus horários" : "Gestão do salão"}
-          </h1>
+          {cliente ? (
+            <>
+              <p className="mt-6 text-[11px] font-medium uppercase tracking-[0.32em] text-brand-300/80">Agenda Salão</p>
+              <h1 className="mt-2 font-display text-4xl font-semibold tracking-tight">Meus horários</h1>
+            </>
+          ) : (
+            <>
+              <h1 className="mt-6 font-display text-4xl font-semibold tracking-tight">Agenda Salão</h1>
+              <p className="mt-2 text-[11px] font-medium uppercase tracking-[0.28em] text-brand-300/85">
+                Gestão para seu salão / Estúdio
+              </p>
+            </>
+          )}
           <div className="my-4 flex items-center gap-3 text-brand-300/60" aria-hidden>
             <span className="h-px w-10 bg-gradient-to-r from-transparent to-brand-300/50" />
             <span className="text-xs">✦</span>
