@@ -37,3 +37,27 @@ export function formatDateTime(iso: string, timeZone: string) {
     minute: "2-digit",
   }).format(new Date(iso));
 }
+
+/** Data de hoje (AAAA-MM-DD) no fuso do salão. */
+export function todayIn(timeZone: string, addDays = 0) {
+  const d = new Date(Date.now() + addDays * 86_400_000);
+  return new Intl.DateTimeFormat("en-CA", { timeZone }).format(d);
+}
+
+/** Dia (AAAA-MM-DD) de um instante no fuso do salão. */
+export function dayKey(iso: string | Date, timeZone: string) {
+  return new Intl.DateTimeFormat("en-CA", { timeZone }).format(new Date(iso));
+}
+
+export function formatTime(iso: string | Date, timeZone: string) {
+  return new Intl.DateTimeFormat("pt-BR", { timeZone, hour: "2-digit", minute: "2-digit" }).format(new Date(iso));
+}
+
+export function formatLongDate(iso: string | Date, timeZone: string) {
+  return new Intl.DateTimeFormat("pt-BR", {
+    timeZone,
+    weekday: "long",
+    day: "numeric",
+    month: "long",
+  }).format(new Date(iso));
+}

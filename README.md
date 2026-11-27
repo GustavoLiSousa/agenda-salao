@@ -55,7 +55,7 @@ npm run dev
 
 1. ✅ Base do app e modelo de dados
 2. Login (dono/profissional por e-mail, cliente por telefone) e cadastro do salão
-3. Gestão: serviços, profissionais, horários, folgas e abertura da agenda
+3. ✅ Gestão: serviços, profissionais, horários, folgas e abertura da agenda
 4. Agendamento do cliente: serviço → profissional → data → horário livre, confirmação, Google Agenda e lembrete (.ics)
 5. Agenda do salão (dia/semana/mês), desmarcar/remarcar, aviso de vaga liberada e "horários livres" para postar
 6. Clientes como leads (sumidos há 30+ dias, frequência 7/15/30), botões de WhatsApp com mensagem pronta
