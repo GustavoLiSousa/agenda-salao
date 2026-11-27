@@ -11,8 +11,13 @@ export async function GET(request: NextRequest) {
   const type = searchParams.get("type") as EmailOtpType | null;
 
   // O Supabase devolve o erro na URL quando o link é inválido ou já foi usado.
+  // Login do cliente (área "Meus agendamentos") volta para a tela do cliente.
+  const failure = next.startsWith("/minha-conta")
+    ? `${origin}/minha-conta/entrar?erro=1&next=${encodeURIComponent(next)}`
+    : `${origin}/entrar?erro=confirmacao`;
+
   if (searchParams.get("error") || searchParams.get("error_description")) {
-    return NextResponse.redirect(`${origin}/entrar?erro=confirmacao`);
+    return NextResponse.redirect(failure);
   }
 
   const supabase = await createClient();
@@ -20,6 +25,7 @@ export async function GET(request: NextRequest) {
   if (code) {
     const { error } = await supabase.auth.exchangeCodeForSession(code);
     if (!error) return NextResponse.redirect(`${origin}${next}`);
+    if (next.startsWith("/minha-conta")) return NextResponse.redirect(failure);
     // O Supabase só manda `code` depois de confirmar o e-mail. Se a troca falhou
     // (ex.: link aberto em outro navegador/app, sem o cookie do cadastro),
     // o e-mail já está confirmado: basta entrar com e-mail e senha.
@@ -29,5 +35,5 @@ export async function GET(request: NextRequest) {
     if (!error) return NextResponse.redirect(`${origin}${next}`);
   }
 
-  return NextResponse.redirect(`${origin}/entrar?erro=confirmacao`);
+  return NextResponse.redirect(failure);
 }

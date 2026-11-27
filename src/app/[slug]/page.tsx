@@ -3,6 +3,7 @@ import { notFound } from "next/navigation";
 import { createClient, isSupabaseConfigured } from "@/lib/supabase/server";
 import { formatDuration, formatPrice, whatsappLink } from "@/lib/format";
 import type { Professional, Salon, Service } from "@/lib/types";
+import { InstallApp } from "@/components/install-app";
 
 export const dynamic = "force-dynamic";
 
@@ -54,6 +55,12 @@ export default async function SalonPage({ params }: { params: Promise<{ slug: st
             <div className="h-full w-full bg-[radial-gradient(ellipse_at_top_right,#4d3922_0%,#1c1917_60%)]" />
           )}
           <div className="absolute inset-0 bg-gradient-to-t from-stone-950/80 via-stone-950/20 to-transparent" />
+          <Link
+            href={`/minha-conta?salao=${salon.slug}`}
+            className="absolute right-4 top-[calc(1rem+env(safe-area-inset-top))] rounded-full bg-white/90 px-4 py-2 text-sm font-semibold text-stone-900 shadow-md backdrop-blur transition hover:bg-white"
+          >
+            Meus agendamentos
+          </Link>
         </div>
         <div className="relative mx-auto -mt-16 flex max-w-2xl items-end gap-4 px-5">
           <div className="flex h-24 w-24 shrink-0 items-center justify-center overflow-hidden rounded-2xl border-4 border-[#f7f5f2] bg-stone-900 shadow-lg dark:border-stone-950">
@@ -83,6 +90,8 @@ export default async function SalonPage({ params }: { params: Promise<{ slug: st
       </header>
 
       <div className="mx-auto flex max-w-2xl flex-col gap-10 px-5 pt-8">
+        <InstallApp salonName={salon.name} />
+
         {/* Serviços */}
         {[...groups.entries()].map(([cat, items]) => (
           <section key={cat}>

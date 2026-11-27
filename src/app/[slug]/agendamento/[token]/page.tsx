@@ -5,6 +5,8 @@ import { calendarEventFor, getAppointmentByToken } from "@/lib/appointment";
 import { googleCalendarUrl } from "@/lib/calendar";
 import { formatDuration, formatPrice, whatsappLink } from "@/lib/format";
 import { formatLongDate, formatTime } from "@/lib/time";
+import { claimTokens } from "@/lib/client-area";
+import { createClient } from "@/lib/supabase/server";
 import { cancelAction } from "./actions";
 
 export const dynamic = "force-dynamic";
@@ -28,6 +30,15 @@ export default async function AgendamentoPage({
   const q = await searchParams;
   const a = await getAppointmentByToken(token);
   if (!a || a.salon_slug !== slug) notFound();
+
+  // com a conta aberta, este horário passa a aparecer em "Meus agendamentos"
+  const supabase = await createClient();
+  const {
+    data: { user },
+  } = await supabase.auth.getUser();
+  if (user) await claimTokens(supabase, [token]);
+  const myArea = `/minha-conta?salao=${slug}`;
+  const loginHref = `/minha-conta/entrar?next=${encodeURIComponent(`${myArea}&vincular=${token}`)}`;
 
   const tz = a.salon_timezone;
   const when = `${formatLongDate(a.starts_at, tz)} às ${formatTime(a.starts_at, tz)}`;
@@ -135,6 +146,18 @@ export default async function AgendamentoPage({
           Para mudar este horário agora, fale com o salão pelo WhatsApp.
         </p>
       )}
+
+      <Link
+        href={user ? myArea : loginHref}
+        className="rounded-2xl border border-stone-200/80 bg-white p-4 text-sm dark:border-stone-800 dark:bg-stone-900"
+      >
+        <span className="block font-semibold">{user ? "Ver todos os meus agendamentos" : "Guardar na minha conta"}</span>
+        <span className="block text-stone-500">
+          {user
+            ? "Seus horários em todos os salões, num lugar só."
+            : "Entre com Google ou e-mail para ver, remarcar e desmarcar seus horários sem precisar deste link."}
+        </span>
+      </Link>
 
       {!active && (
         <Link

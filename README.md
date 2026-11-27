@@ -46,6 +46,17 @@ O cliente agenda por um link (aberto no navegador do celular, sem precisar de lo
    e adicione `https://seu-projeto.vercel.app/**` em **Redirect URLs** (é para onde o e-mail de confirmação leva).
 8. Abra `https://seu-projeto.vercel.app/entrar`, crie sua conta e cadastre o seu salão.
 
+### Login do cliente ("Meus agendamentos")
+
+- **Código por e-mail:** no Supabase, em **Authentication > Emails**, nos modelos *Magic Link* e *Confirm signup*,
+  acrescente a linha `Seu código: {{ .Token }}`. Assim o cliente pode digitar o código no app instalado
+  (o link do e-mail abre no navegador, fora do app).
+- **Entrar com Google:** em **Authentication > Sign In / Providers > Google**, ative e cole o *Client ID* e o
+  *Client Secret* criados no Google Cloud (Credenciais > ID do cliente OAuth > Aplicativo da Web, com a
+  *Callback URL* que o Supabase mostra).
+- O plano grátis do Supabase envia poucos e-mails por hora. Para volume maior, configure um SMTP próprio
+  (ex.: Resend) em **Authentication > Emails > SMTP Settings**.
+
 ## Rodar no computador (para desenvolvedores)
 
 ```bash
@@ -62,4 +73,6 @@ npm run dev
 4. ✅ Agendamento do cliente com nome e telefone: serviço → profissional → data → horário livre, confirmação, Google Agenda, lembrete (.ics) e link pessoal para remarcar/desmarcar
 5. ✅ Agenda do salão (dia/semana/mês), atendido/falta/desmarcar, agendar pelo balcão, aviso de vaga liberada e "horários livres" para postar
 6. ✅ Clientes como leads (sumidos, frequência de retorno, aniversário), cartão fidelidade, WhatsApp com mensagem pronta e ajustes do salão
-7. Relatórios do mês
+7. ✅ Área do cliente: "Meus agendamentos" (entra com Google ou código por e-mail), remarcar/desmarcar e app instalável com a cara de cada salão
+8. Página do salão completa, avaliações, pacotes e pagamentos (Mercado Pago)
+9. Relatórios do mês
