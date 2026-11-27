@@ -4,6 +4,8 @@ import { createClient, isSupabaseConfigured } from "@/lib/supabase/server";
 import { formatDuration, formatPrice, whatsappLink } from "@/lib/format";
 import type { Professional, Salon, Service } from "@/lib/types";
 import { InstallApp } from "@/components/install-app";
+import { SectionNav } from "@/components/section-nav";
+import { openStatus, openingHours, WEEKDAYS, type WorkingHourRow } from "@/lib/opening-hours";
 
 export const dynamic = "force-dynamic";
 
@@ -34,6 +36,21 @@ export default async function SalonPage({ params }: { params: Promise<{ slug: st
     supabase.from("services").select("*").eq("salon_id", salon.id).eq("active", true).order("sort_order").order("name").returns<Service[]>(),
     supabase.from("professionals").select("*").eq("salon_id", salon.id).eq("active", true).order("sort_order").order("name").returns<Professional[]>(),
   ]);
+
+  const proIds = (professionals ?? []).map((p) => p.id);
+  const { data: workRows } = proIds.length
+    ? await supabase.from("working_hours").select("weekday, start_time, end_time").in("professional_id", proIds).returns<WorkingHourRow[]>()
+    : { data: [] as WorkingHourRow[] };
+  const hours = openingHours(workRows ?? []);
+  const hasHours = hours.some((d) => d.length > 0);
+  const status = hasHours ? openStatus(hours, salon.timezone) : null;
+  const mapQuery = salon.address ? encodeURIComponent(`${salon.address}`) : null;
+
+  const sections = [
+    { id: "servicos", label: "Serviços" },
+    ...((professionals ?? []).length > 0 ? [{ id: "equipe", label: "Equipe" }] : []),
+    ...(salon.address || hasHours || salon.whatsapp ? [{ id: "local", label: "Local e horário" }] : []),
+  ];
 
   // agrupa por categoria
   const groups = new Map<string, Service[]>();
@@ -80,6 +97,11 @@ export default async function SalonPage({ params }: { params: Promise<{ slug: st
                 {salon.address}
               </a>
             )}
+            {status && (
+              <a href="#local" className={status.open ? "font-medium text-emerald-700 dark:text-emerald-400" : ""}>
+                {status.label}
+              </a>
+            )}
             {instagram && (
               <a href={`https://instagram.com/${instagram}`} target="_blank" rel="noreferrer" className="hover:text-stone-900 dark:hover:text-stone-100">
                 @{instagram}
@@ -89,10 +111,14 @@ export default async function SalonPage({ params }: { params: Promise<{ slug: st
         </div>
       </header>
 
+      <SectionNav items={sections} />
+
       <div className="mx-auto flex max-w-2xl flex-col gap-10 px-5 pt-8">
         <InstallApp salonName={salon.name} />
 
         {/* Serviços */}
+        <div id="servicos" className="flex scroll-mt-16 flex-col gap-10">
+        {groups.size === 0 && <p className="text-sm text-stone-500">Os serviços aparecem aqui assim que o salão cadastrar.</p>}
         {[...groups.entries()].map(([cat, items]) => (
           <section key={cat}>
             <h2 className="mb-4 flex items-center gap-3 text-xs font-semibold uppercase tracking-[0.2em] text-brand-700 dark:text-brand-300">
@@ -134,9 +160,11 @@ export default async function SalonPage({ params }: { params: Promise<{ slug: st
           </section>
         ))}
 
+        </div>
+
         {/* Equipe */}
         {(professionals ?? []).length > 0 && (
-          <section>
+          <section id="equipe" className="scroll-mt-16">
             <h2 className="mb-4 flex items-center gap-3 text-xs font-semibold uppercase tracking-[0.2em] text-brand-700 dark:text-brand-300">
               Equipe
               <span className="h-px flex-1 bg-stone-200 dark:bg-stone-800" />
@@ -154,6 +182,7 @@ export default async function SalonPage({ params }: { params: Promise<{ slug: st
                       )}
                     </div>
                     <p className="mt-2 truncate text-sm font-medium">{p.name}</p>
+                    {p.bio && <p className="line-clamp-2 text-xs text-stone-500">{p.bio}</p>}
                   </Link>
                 </li>
               ))}
@@ -161,13 +190,79 @@ export default async function SalonPage({ params }: { params: Promise<{ slug: st
           </section>
         )}
 
-        {salon.whatsapp && (
-          <a
-            href={whatsappLink(salon.whatsapp, `Olá, ${salon.name}! Tenho uma dúvida.`)}
-            className="text-center text-sm text-stone-500 underline-offset-4 hover:underline"
-          >
-            Dúvidas? Fale com o salão no WhatsApp
-          </a>
+        {/* Local e horário */}
+        {sections.some((x) => x.id === "local") && (
+          <section id="local" className="scroll-mt-16">
+            <h2 className="mb-4 flex items-center gap-3 text-xs font-semibold uppercase tracking-[0.2em] text-brand-700 dark:text-brand-300">
+              Local e horário
+              <span className="h-px flex-1 bg-stone-200 dark:bg-stone-800" />
+            </h2>
+            <div className="overflow-hidden rounded-2xl border border-stone-200/80 bg-white dark:border-stone-800 dark:bg-stone-900">
+              {mapQuery && (
+                <iframe
+                  title={`Mapa: ${salon.name}`}
+                  src={`https://maps.google.com/maps?q=${mapQuery}&z=16&output=embed`}
+                  className="h-56 w-full border-0 sm:h-64"
+                  loading="lazy"
+                  referrerPolicy="no-referrer-when-downgrade"
+                />
+              )}
+              <div className="flex flex-col gap-4 p-4">
+                {salon.address && <p className="font-medium">{salon.address}</p>}
+                <div className="flex flex-wrap gap-2">
+                  {mapQuery && (
+                    <>
+                      <a
+                        href={`https://www.google.com/maps/search/?api=1&query=${mapQuery}`}
+                        target="_blank"
+                        rel="noreferrer"
+                        className="rounded-xl bg-stone-900 px-4 py-2 text-sm font-semibold text-white transition hover:bg-stone-800 dark:bg-stone-100 dark:text-stone-900"
+                      >
+                        Abrir no Google Maps
+                      </a>
+                      <a
+                        href={`https://www.google.com/maps/dir/?api=1&destination=${mapQuery}`}
+                        target="_blank"
+                        rel="noreferrer"
+                        className="rounded-xl border border-stone-300 px-4 py-2 text-sm font-medium dark:border-stone-700"
+                      >
+                        Como chegar
+                      </a>
+                    </>
+                  )}
+                  {salon.whatsapp && (
+                    <a
+                      href={whatsappLink(salon.whatsapp, `Olá, ${salon.name}! Tenho uma dúvida.`)}
+                      target="_blank"
+                      rel="noreferrer"
+                      className="rounded-xl bg-[#1f9d55] px-4 py-2 text-sm font-semibold text-white transition hover:bg-[#188247]"
+                    >
+                      WhatsApp
+                    </a>
+                  )}
+                </div>
+                {hasHours && (
+                  <div>
+                    {status && (
+                      <p className={`mb-2 text-sm font-semibold ${status.open ? "text-emerald-700 dark:text-emerald-400" : "text-stone-500"}`}>
+                        {status.label}
+                      </p>
+                    )}
+                    <ul className="flex flex-col divide-y divide-stone-100 text-sm dark:divide-stone-800">
+                      {[1, 2, 3, 4, 5, 6, 0].map((d) => (
+                        <li key={d} className={`flex justify-between gap-4 py-1.5 ${status?.today === d ? "font-semibold" : ""}`}>
+                          <span>{WEEKDAYS[d]}</span>
+                          <span className={hours[d].length ? "" : "text-stone-400"}>
+                            {hours[d].length ? hours[d].map((i) => `${i.start} às ${i.end}`).join(" · ") : "Fechado"}
+                          </span>
+                        </li>
+                      ))}
+                    </ul>
+                  </div>
+                )}
+              </div>
+            </div>
+          </section>
         )}
       </div>
 
