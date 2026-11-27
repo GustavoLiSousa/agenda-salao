@@ -1,11 +1,11 @@
-// Manifesto do site geral. Cada salão tem o seu em /[slug]/app.webmanifest
+// Manifesto do site geral (donos de salão: o atalho abre o painel). Cada salão tem o seu em /[slug]/app.webmanifest
 // (definido no layout do salão), que substitui este nas páginas do salão.
 export function GET() {
   const manifest = {
     name: "Agenda Salão",
     short_name: "Agenda",
-    description: "Agende seu horário no salão pelo celular.",
-    start_url: "/",
+    description: "Painel do salão: agenda, clientes e serviços.",
+    start_url: "/painel",
     display: "standalone",
     background_color: "#ffffff",
     theme_color: "#7c3aed",

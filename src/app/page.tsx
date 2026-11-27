@@ -23,6 +23,9 @@ export default function Home() {
           Ver um exemplo
         </Link>
       </div>
+      <Link href="/minha-conta" className="text-sm text-stone-500 underline-offset-4 hover:text-stone-900 hover:underline dark:hover:text-stone-100">
+        É cliente? Veja seus agendamentos ›
+      </Link>
     </main>
   );
 }
