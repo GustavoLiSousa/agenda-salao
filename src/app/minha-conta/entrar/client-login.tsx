@@ -1,14 +1,16 @@
 "use client";
 
-import { useActionState } from "react";
+import { useActionState, useState } from "react";
 import { Button, Field, Notice } from "@/components/ui";
-import { googleSignIn, sendCode, verifyCode, type ClientAuthState } from "./actions";
+import { googleSignIn, passwordSignIn, sendCode, verifyCode, type ClientAuthState } from "./actions";
 
 // O botão do Google só aparece depois que o provedor Google for ativado no Supabase
 // (variável NEXT_PUBLIC_GOOGLE_LOGIN=on na Vercel).
 const googleEnabled = process.env.NEXT_PUBLIC_GOOGLE_LOGIN === "on";
 
 export function ClientLogin({ next }: { next: string }) {
+  const [mode, setMode] = useState<"senha" | "codigo">("senha");
+  const [signed, signIn, signingIn] = useActionState<ClientAuthState, FormData>(passwordSignIn, {});
   const [sent, send, sending] = useActionState<ClientAuthState, FormData>(sendCode, {});
   const [checked, check, checking] = useActionState<ClientAuthState, FormData>(verifyCode, {});
   const email = checked.sentTo ?? sent.sentTo;
@@ -50,15 +52,46 @@ export function ClientLogin({ next }: { next: string }) {
         </>
       )}
 
-      {!email ? (
-        <form action={send} className="flex flex-col gap-3">
-          <input type="hidden" name="next" value={next} />
-          <Field label="Seu e-mail" name="email" type="email" autoComplete="email" inputMode="email" required />
-          {sent.error && <Notice kind="error">{sent.error}</Notice>}
-          <Button disabled={sending} className="rounded-2xl py-3.5">
-            {sending ? "Enviando..." : "Receber código por e-mail"}
-          </Button>
-        </form>
+      {mode === "senha" ? (
+        <>
+          <form action={signIn} className="flex flex-col gap-3">
+            <input type="hidden" name="next" value={next} />
+            <Field label="Seu e-mail" name="email" type="email" autoComplete="email" inputMode="email" required />
+            <Field label="Senha" name="password" type="password" autoComplete="current-password" required />
+            {signed.error && <Notice kind="error">{signed.error}</Notice>}
+            <Button disabled={signingIn} className="rounded-2xl py-3.5">
+              {signingIn ? "Entrando..." : "Entrar"}
+            </Button>
+          </form>
+          <button
+            type="button"
+            onClick={() => setMode("codigo")}
+            className="rounded-2xl border border-stone-200 px-4 py-3 text-sm text-stone-600 transition hover:border-stone-400 hover:text-stone-900 dark:border-stone-800 dark:text-stone-300 dark:hover:text-white"
+          >
+            <b>Primeiro acesso</b> ou <b>esqueceu a senha</b>?
+            <br />
+            Entre com um código no seu e-mail
+          </button>
+        </>
+      ) : !email ? (
+        <>
+          <form action={send} className="flex flex-col gap-3">
+            <input type="hidden" name="next" value={next} />
+            <Notice>Vamos mandar um código para o seu e-mail. Depois de entrar, você cria sua senha.</Notice>
+            <Field label="Seu e-mail" name="email" type="email" autoComplete="email" inputMode="email" required />
+            {sent.error && <Notice kind="error">{sent.error}</Notice>}
+            <Button disabled={sending} className="rounded-2xl py-3.5">
+              {sending ? "Enviando..." : "Receber código por e-mail"}
+            </Button>
+          </form>
+          <button
+            type="button"
+            onClick={() => setMode("senha")}
+            className="text-sm text-stone-500 underline-offset-4 hover:text-stone-900 hover:underline dark:hover:text-white"
+          >
+            Já tenho senha
+          </button>
+        </>
       ) : (
         <form action={check} className="flex flex-col gap-3">
           <input type="hidden" name="next" value={next} />

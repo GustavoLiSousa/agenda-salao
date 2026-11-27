@@ -33,7 +33,7 @@ export default async function ClientLoginPage({
       <div>
         <h1 className="font-display text-3xl font-semibold">Meus agendamentos</h1>
         <p className="mt-1 text-sm text-stone-500">
-          Entre para ver, remarcar ou desmarcar seus horários. Não precisa de senha.
+          Entre para ver, remarcar ou desmarcar seus horários.
         </p>
       </div>
       {q.erro && <Notice kind="error">{q.erro === "1" ? "Não foi possível entrar. Tente de novo." : q.erro}</Notice>}
