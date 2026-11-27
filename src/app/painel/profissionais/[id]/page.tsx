@@ -4,9 +4,10 @@ import { notFound } from "next/navigation";
 import { Button, Card, Field, GhostButton, Notice, Select } from "@/components/ui";
 import { formatPrice } from "@/lib/format";
 import { WEEKDAYS } from "@/lib/parse";
-import { requireSalon } from "@/lib/session";
+import { requireOwner } from "@/lib/session";
 import { formatDateTime } from "@/lib/time";
 import type { Professional, Service } from "@/lib/types";
+import { AccessCard } from "../team-access";
 import { addTimeBlock, deleteProfessional, removeTimeBlock, saveProfessional, saveWorkingHours } from "../actions";
 
 export const metadata = { title: "Profissional | Agenda Salão" };
@@ -18,6 +19,9 @@ const OK: Record<string, string> = {
   dados: "Dados salvos.",
   horarios: "Horários salvos.",
   bloqueio: "Bloqueios atualizados.",
+  acesso: "Entrada aprovada! Ele já pode entrar no app e ver a própria agenda.",
+  permissoes: "Permissões salvas.",
+  "sem-acesso": "Acesso ao app removido.",
 };
 
 const hhmm = (t: string) => t.slice(0, 5);
@@ -32,7 +36,7 @@ export default async function ProfissionalPage({
 }) {
   const { id } = await params;
   const { erro, ok, novo } = await searchParams;
-  const { supabase, membership } = await requireSalon();
+  const { supabase, membership } = await requireOwner();
   const tz = membership.salon.timezone;
 
   const { data: pro } = await supabase
@@ -55,6 +59,23 @@ export default async function ProfissionalPage({
       .order("starts_at")
       .returns<Block[]>(),
   ]);
+  const [{ data: member }, { data: emails }] = await Promise.all([
+    supabase
+      .from("salon_members")
+      .select("user_id, permissions, created_at")
+      .eq("salon_id", membership.salon.id)
+      .eq("professional_id", id)
+      .eq("role", "professional")
+      .maybeSingle<{ user_id: string; permissions: string[]; created_at: string }>(),
+    supabase.rpc("team_access", { p_salon: membership.salon.id }).returns<{ user_id: string; email: string }[]>(),
+  ]);
+  const access = member
+    ? {
+        ...member,
+        since: member.created_at,
+        email: ((emails ?? []) as { user_id: string; email: string }[]).find((e) => e.user_id === member.user_id)?.email ?? "",
+      }
+    : null;
   const doing = new Set((links ?? []).map((l) => l.service_id as string));
 
   return (
@@ -185,6 +206,8 @@ export default async function ProfissionalPage({
           <Button className="self-start">Salvar horários</Button>
         </form>
       </Card>
+
+      <AccessCard proId={pro.id} access={access} tz={tz} />
 
       {/* Folgas e bloqueios */}
       <Card className="flex flex-col gap-3">

@@ -2,7 +2,7 @@ import { Button, Card, Field, GhostButton, Notice, PageHeader } from "@/componen
 import { formatPrice } from "@/lib/format";
 import { fullPrice, itemsLabel, validityLabel, type SalonPackage } from "@/lib/packages";
 import { centsToInput } from "@/lib/parse";
-import { requireSalon } from "@/lib/session";
+import { requirePermission } from "@/lib/session";
 import { handleRequest, savePackage, togglePackage } from "./actions";
 import { formatPhone, whatsappLink } from "@/lib/format";
 import { formatLongDate } from "@/lib/time";
@@ -71,7 +71,7 @@ function PackageForm({ pkg, services }: { pkg?: SalonPackage; services: Svc[] })
 
 export default async function PacotesPage({ searchParams }: { searchParams: Promise<{ erro?: string; ok?: string }> }) {
   const { erro, ok } = await searchParams;
-  const { supabase, membership } = await requireSalon();
+  const { supabase, membership } = await requirePermission("pacotes");
   const salonId = membership.salon.id;
   const isOwner = membership.role === "owner";
 

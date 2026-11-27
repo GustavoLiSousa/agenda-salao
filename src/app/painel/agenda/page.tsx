@@ -3,6 +3,7 @@ import { headers } from "next/headers";
 import { CopyButton } from "@/components/copy-button";
 import { Card, Notice } from "@/components/ui";
 import { formatPrice, whatsappLink } from "@/lib/format";
+import { can } from "@/lib/permissions";
 import { requireSalon } from "@/lib/session";
 import {
   addDays,
@@ -77,7 +78,10 @@ export default async function AgendaPage({
   const view: View = q.view === "semana" || q.view === "mes" ? q.view : "dia";
   const today = todayIn(tz);
   const day = isValidDay(q.data) ? q.data : today;
-  const prof = q.prof ?? (membership.role === "professional" ? membership.professional_id ?? "" : "");
+  // Funcionário sem permissão vê só a própria agenda e não vê valores.
+  const onlyMine = !can(membership, "agenda_equipe");
+  const showMoney = can(membership, "faturamento");
+  const prof = onlyMine ? (membership.professional_id ?? "00000000-0000-0000-0000-000000000000") : (q.prof ?? "");
   const { from, to } = range(view, day);
 
   const href = (p: Partial<{ view: View; data: string; prof: string }>) => {
@@ -107,6 +111,7 @@ export default async function AgendaPage({
       .select("id, manage_token, starts_at, ends_at, status, price_cents, notes, source, cancelled_at, professional_id, client:clients(name, phone), service:services(name), professional:professionals(name)")
       .eq("salon_id", salon.id)
       .eq("status", "cancelled")
+      .match(onlyMine ? { professional_id: prof } : {})
       .gt("starts_at", new Date().toISOString())
       .gt("cancelled_at", new Date(Date.now() - 72 * 3_600_000).toISOString())
       .order("starts_at")
@@ -218,7 +223,7 @@ export default async function AgendaPage({
           </div>
           <Link href={href({ data: shift(view, day, 1) })} className="rounded-lg px-3 py-1 text-xl" aria-label="Próximo">›</Link>
         </div>
-        {(pros ?? []).length > 1 && (
+        {!onlyMine && (pros ?? []).length > 1 && (
           <div className="-mx-4 flex gap-2 overflow-x-auto px-4 text-sm">
             {[{ id: "", name: "Todos" }, ...(pros ?? [])].map((p) => (
               <Link
@@ -234,7 +239,8 @@ export default async function AgendaPage({
           </div>
         )}
         <p className="text-xs text-stone-500">
-          {active.length} horário(s) · {formatPrice(active.reduce((s, r) => s + r.price_cents, 0))} previsto
+          {active.length} horário(s)
+          {showMoney && ` · ${formatPrice(active.reduce((s, r) => s + r.price_cents, 0))} previsto`}
         </p>
       </div>
 
@@ -272,7 +278,7 @@ export default async function AgendaPage({
                 <ul className="flex flex-col gap-2">
                   {segs.map((s) =>
                     s.kind === "appt" ? (
-                      <AppointmentCard key={(s.ref as Row).id} r={s.ref as Row} tz={tz} returnTo={returnTo} salonName={salon.name} salonUrl={`${proto}://${host}/${salon.slug}`} />
+                      <AppointmentCard key={(s.ref as Row).id} r={s.ref as Row} tz={tz} returnTo={returnTo} salonName={salon.name} salonUrl={`${proto}://${host}/${salon.slug}`} showMoney={showMoney} />
                     ) : s.kind === "block" ? (
                       <li key={`b${s.start}`} className="rounded-xl border border-dashed border-stone-300 px-4 py-3 text-sm text-stone-500 dark:border-stone-700">
                         <span className="font-mono">{fromMin(s.start)}–{fromMin(Math.min(s.end, 1439))}</span> · Bloqueado
@@ -293,7 +299,7 @@ export default async function AgendaPage({
                     ),
                   )}
                   {cancelled.map((r) => (
-                    <AppointmentCard key={r.id} r={r} tz={tz} returnTo={returnTo} salonName={salon.name} salonUrl={`${proto}://${host}/${salon.slug}`} />
+                    <AppointmentCard key={r.id} r={r} tz={tz} returnTo={returnTo} salonName={salon.name} salonUrl={`${proto}://${host}/${salon.slug}`} showMoney={showMoney} />
                   ))}
                 </ul>
               </section>
@@ -305,7 +311,7 @@ export default async function AgendaPage({
               {list
                 .filter((r) => !shownPros.some((p) => p.id === r.professional_id))
                 .map((r) => (
-                  <AppointmentCard key={r.id} r={r} tz={tz} returnTo={returnTo} salonName={salon.name} salonUrl={`${proto}://${host}/${salon.slug}`} />
+                  <AppointmentCard key={r.id} r={r} tz={tz} returnTo={returnTo} salonName={salon.name} salonUrl={`${proto}://${host}/${salon.slug}`} showMoney={showMoney} />
                 ))}
             </ul>
           )}
@@ -368,7 +374,7 @@ export default async function AgendaPage({
   );
 }
 
-function AppointmentCard({ r, tz, returnTo, salonName, salonUrl }: { r: Row; tz: string; returnTo: string; salonName: string; salonUrl: string }) {
+function AppointmentCard({ r, tz, returnTo, salonName, salonUrl, showMoney }: { r: Row; tz: string; returnTo: string; salonName: string; salonUrl: string; showMoney: boolean }) {
   const st = STATUS[r.status];
   const name = r.client?.name ?? "Cliente";
   const remind = whatsappLink(
@@ -394,7 +400,8 @@ function AppointmentCard({ r, tz, returnTo, salonName, salonUrl }: { r: Row; tz:
             </p>
             <p className="font-semibold">{name}</p>
             <p className="text-sm text-stone-500">
-              {r.service?.name} · {r.professional?.name} · {formatPrice(r.price_cents)}
+              {r.service?.name} · {r.professional?.name}
+              {showMoney ? ` · ${formatPrice(r.price_cents)}` : ""}
               {r.source === "salon" ? " · balcão" : ""}
             </p>
             {r.notes && <p className="text-xs text-stone-500">Obs.: {r.notes}</p>}

@@ -1,6 +1,6 @@
 import { ImageInput } from "@/components/image-input";
 import { Button, Card, Field, Notice, PageHeader } from "@/components/ui";
-import { requireSalon } from "@/lib/session";
+import { requireOwner } from "@/lib/session";
 import { saveSettings } from "./actions";
 
 export const metadata = { title: "Ajustes | Agenda Salão" };
@@ -23,7 +23,7 @@ export default async function ConfiguracoesPage({
   searchParams: Promise<{ ok?: string; erro?: string }>;
 }) {
   const q = await searchParams;
-  const { membership } = await requireSalon();
+  const { membership } = await requireOwner();
   const s = membership.salon;
   const wa = s.whatsapp?.replace(/^55/, "") ?? "";
 

@@ -31,3 +31,21 @@ export async function createSalon(_: NewSalonState, formData: FormData): Promise
   }
   redirect("/painel");
 }
+
+/** Funcionário pede para entrar em um salão que já usa o app. */
+export async function requestJoin(formData: FormData) {
+  const supabase = await createClient();
+  const { error } = await supabase.rpc("request_join_salon", {
+    p_salon: String(formData.get("salon_id") ?? ""),
+    p_name: String(formData.get("name") ?? ""),
+    p_phone: String(formData.get("phone") ?? ""),
+  });
+  if (error) redirect(`/painel/novo-salao?modo=equipe&erro=${encodeURIComponent(error.message)}`);
+  redirect("/painel/novo-salao?modo=equipe&ok=1");
+}
+
+export async function cancelJoin(formData: FormData) {
+  const supabase = await createClient();
+  await supabase.rpc("cancel_join_request", { p_request: String(formData.get("id") ?? "") });
+  redirect("/painel/novo-salao?modo=equipe");
+}

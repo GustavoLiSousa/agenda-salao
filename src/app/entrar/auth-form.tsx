@@ -30,7 +30,7 @@ export function AuthForm() {
             aria-pressed={mode === m}
             className={`relative z-10 rounded-xl py-2.5 transition-colors ${mode === m ? "text-white" : "text-stone-400 hover:text-stone-200"}`}
           >
-            {m === "entrar" ? "Entrar" : "Cadastrar salão"}
+            {m === "entrar" ? "Entrar" : "Criar conta"}
           </button>
         ))}
       </div>
@@ -67,7 +67,7 @@ function ModeForm({ mode }: { mode: Mode }) {
       {state.error && <Message kind="error">{state.error}</Message>}
       {state.message && <Message kind="info">{state.message}</Message>}
       <button disabled={pending} className={goldButton}>
-        {pending ? "Aguarde..." : mode === "entrar" ? "Entrar" : "Cadastrar meu salão"}
+        {pending ? "Aguarde..." : mode === "entrar" ? "Entrar" : "Criar minha conta"}
         {!pending && <span aria-hidden>→</span>}
       </button>
     </form>

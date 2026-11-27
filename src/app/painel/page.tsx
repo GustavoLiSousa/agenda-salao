@@ -1,11 +1,14 @@
 import Link from "next/link";
 import { headers } from "next/headers";
+import { BrandMark } from "@/components/brand-mark";
+import { DayStrip } from "@/components/day-strip";
 import { ShareLink } from "@/components/share-link";
-import { Avatar, Badge, Card, LinkButton, PageHeader, Stat } from "@/components/ui";
+import { Avatar, Card } from "@/components/ui";
 import { birthdayMessage, comeBackMessage, daysSince, leadStatus, type ClientStats } from "@/lib/clients";
 import { formatPrice, whatsappLink } from "@/lib/format";
+import { can } from "@/lib/permissions";
 import { requireSalon } from "@/lib/session";
-import { addDays, dayKey, formatLongDate, formatTime, todayIn, zonedToDate } from "@/lib/time";
+import { addDays, dayKey, formatTime, isValidDay, todayIn, zonedToDate } from "@/lib/time";
 import type { AppointmentStatus } from "@/lib/types";
 
 export const metadata = { title: "Início | Agenda Salão" };
@@ -22,70 +25,156 @@ type Appt = {
   professional: { name: string } | null;
 };
 
-const STATUS: Record<AppointmentStatus, { label: string; cls: string }> = {
-  confirmed: { label: "Confirmado", cls: "bg-stone-100 text-stone-700 dark:bg-stone-800 dark:text-stone-300" },
-  completed: { label: "Atendido", cls: "bg-emerald-50 text-emerald-700 dark:bg-emerald-950 dark:text-emerald-300" },
-  no_show: { label: "Faltou", cls: "bg-amber-50 text-amber-700 dark:bg-amber-950 dark:text-amber-300" },
-  cancelled: { label: "Desmarcado", cls: "bg-stone-100 text-stone-400 line-through dark:bg-stone-800" },
+type MonthRow = {
+  status: AppointmentStatus;
+  price_cents: number;
+  ends_at: string;
+  professional_id: string;
+  service: { name: string } | null;
+  professional: { name: string } | null;
 };
 
-export default async function PainelPage() {
+const STATUS: Record<AppointmentStatus, { label: string; dot: string }> = {
+  confirmed: { label: "Confirmado", dot: "bg-brand-400" },
+  completed: { label: "Atendido", dot: "bg-emerald-500" },
+  no_show: { label: "Faltou", dot: "bg-amber-500" },
+  cancelled: { label: "Desmarcado", dot: "bg-stone-300 dark:bg-stone-600" },
+};
+
+const longDay = (d: string) =>
+  new Intl.DateTimeFormat("pt-BR", { weekday: "long", day: "numeric", month: "long", timeZone: "UTC" }).format(
+    new Date(`${d}T12:00:00Z`),
+  );
+
+export default async function PainelPage({ searchParams }: { searchParams: Promise<{ dia?: string }> }) {
+  const { dia } = await searchParams;
   const { supabase, user, membership } = await requireSalon();
   const salon = membership.salon;
   const tz = salon.timezone;
+  const owner = membership.role === "owner";
+  // Funcionário sem permissão vê só a própria agenda e não vê valores.
+  const onlyMine = !can(membership, "agenda_equipe");
+  const myPro = membership.professional_id;
+  const showMoney = can(membership, "faturamento");
   const today = todayIn(tz);
+  const day = isValidDay(dia) && dia >= today ? dia : today;
   const monthStart = `${today.slice(0, 7)}-01`;
   const iso = (d: string) => zonedToDate(d, "00:00", tz).toISOString();
   const nowIso = new Date().toISOString();
+  const mine: Record<string, string> = onlyMine
+    ? { professional_id: myPro ?? "00000000-0000-0000-0000-000000000000" }
+    : {};
 
-  const [{ data: todayRows }, { data: monthRows }, { data: stats }, { count: servicesCount }, { count: prosCount }, { count: freedCount }] =
+  const [{ data: dayRows }, { data: nextDays }, { data: monthRows }] = await Promise.all([
+    supabase
+      .from("appointments")
+      .select(
+        "id, starts_at, ends_at, status, price_cents, professional_id, client:clients(name, phone), service:services(name), professional:professionals(name)",
+      )
+      .eq("salon_id", salon.id)
+      .gte("starts_at", iso(day))
+      .lt("starts_at", iso(addDays(day, 1)))
+      .match(mine)
+      .order("starts_at")
+      .returns<Appt[]>(),
+    supabase
+      .from("appointments")
+      .select("starts_at, professional_id")
+      .eq("salon_id", salon.id)
+      .neq("status", "cancelled")
+      .gte("starts_at", iso(today))
+      .lt("starts_at", iso(addDays(today, 14)))
+      .match(mine)
+      .returns<{ starts_at: string }[]>(),
+    supabase
+      .from("appointments")
+      .select("status, price_cents, ends_at, professional_id, service:services(name), professional:professionals(name)")
+      .eq("salon_id", salon.id)
+      .gte("starts_at", iso(monthStart))
+      .lt("starts_at", iso(addDays(today, 1)))
+      .match(mine)
+      .returns<MonthRow[]>(),
+  ]);
+
+  const [{ data: stats }, { count: packageRequests }, { count: joinRequests }, { count: freedCount }, setupCounts] =
     await Promise.all([
-      supabase
-        .from("appointments")
-        .select("id, starts_at, ends_at, status, price_cents, professional_id, client:clients(name, phone), service:services(name), professional:professionals(name)")
-        .eq("salon_id", salon.id)
-        .gte("starts_at", iso(today))
-        .lt("starts_at", iso(addDays(today, 1)))
-        .order("starts_at")
-        .returns<Appt[]>(),
-      supabase
-        .from("appointments")
-        .select("status, price_cents, ends_at")
-        .eq("salon_id", salon.id)
-        .gte("starts_at", iso(monthStart))
-        .lt("starts_at", iso(addDays(today, 1)))
-        .returns<{ status: AppointmentStatus; price_cents: number; ends_at: string }[]>(),
       supabase.from("client_stats").select("*").eq("salon_id", salon.id).returns<ClientStats[]>(),
-      supabase.from("services").select("id", { count: "exact", head: true }).eq("salon_id", salon.id).is("archived_at", null),
-      supabase.from("professionals").select("id", { count: "exact", head: true }).eq("salon_id", salon.id).is("archived_at", null),
+      can(membership, "pacotes")
+        ? supabase
+            .from("package_requests")
+            .select("id", { count: "exact", head: true })
+            .eq("salon_id", salon.id)
+            .eq("status", "pending")
+        : Promise.resolve({ count: 0 }),
+      owner
+        ? supabase
+            .from("salon_join_requests")
+            .select("id", { count: "exact", head: true })
+            .eq("salon_id", salon.id)
+            .eq("status", "pending")
+        : Promise.resolve({ count: 0 }),
       supabase
         .from("appointments")
         .select("id", { count: "exact", head: true })
         .eq("salon_id", salon.id)
         .eq("status", "cancelled")
         .gt("starts_at", nowIso)
-        .gt("cancelled_at", new Date(Date.now() - 72 * 3_600_000).toISOString()),
+        .gt("cancelled_at", new Date(Date.now() - 72 * 3_600_000).toISOString())
+        .match(mine),
+      owner
+        ? Promise.all([
+            supabase
+              .from("services")
+              .select("id", { count: "exact", head: true })
+              .eq("salon_id", salon.id)
+              .is("archived_at", null),
+            supabase
+              .from("professionals")
+              .select("id", { count: "exact", head: true })
+              .eq("salon_id", salon.id)
+              .is("archived_at", null),
+          ])
+        : null,
     ]);
 
-  const { count: packageRequests } = await supabase
-    .from("package_requests")
-    .select("id", { count: "exact", head: true })
-    .eq("salon_id", salon.id)
-    .eq("status", "pending");
+  // Dia escolhido
+  const list = dayRows ?? [];
+  const active = list.filter((r) => r.status !== "cancelled");
+  const expected = active.filter((r) => r.status !== "no_show").reduce((s, r) => s + r.price_cents, 0);
+  const next = day === today ? list.find((r) => r.status === "confirmed" && r.starts_at > nowIso) : undefined;
+  const counts: Record<string, number> = {};
+  for (const r of nextDays ?? []) {
+    const k = dayKey(r.starts_at, tz);
+    counts[k] = (counts[k] ?? 0) + 1;
+  }
+  const byPro = new Map<string, { name: string; items: Appt[] }>();
+  for (const r of list) {
+    const g = byPro.get(r.professional_id) ?? { name: r.professional?.name ?? "", items: [] };
+    g.items.push(r);
+    byPro.set(r.professional_id, g);
+  }
 
-  const todayList = todayRows ?? [];
-  const todayActive = todayList.filter((r) => r.status !== "cancelled");
-  const expected = todayActive.filter((r) => r.status !== "no_show").reduce((s, r) => s + r.price_cents, 0);
-  const done = todayList.filter((r) => r.status === "completed" || (r.status === "confirmed" && r.ends_at < nowIso)).length;
-  const noShows = todayList.filter((r) => r.status === "no_show").length;
-  const next = todayList.find((r) => r.status === "confirmed" && r.starts_at > nowIso);
+  // Produção do mês: o que foi feito e por quem
+  const done = (monthRows ?? []).filter(
+    (r) => r.status === "completed" || (r.status === "confirmed" && r.ends_at < nowIso),
+  );
+  const monthRevenue = done.reduce((s, r) => s + r.price_cents, 0);
+  const byService = new Map<string, number>();
+  for (const r of done)
+    byService.set(r.service?.name ?? "Serviço", (byService.get(r.service?.name ?? "Serviço") ?? 0) + 1);
+  const team = new Map<string, { name: string; count: number; cents: number }>();
+  for (const r of done) {
+    const t = team.get(r.professional_id) ?? { name: r.professional?.name ?? "", count: 0, cents: 0 };
+    t.count += 1;
+    t.cents += r.price_cents;
+    team.set(r.professional_id, t);
+  }
+  const teamList = [...team.values()].sort((a, b) => b.count - a.count);
+  const topServices = [...byService.entries()].sort((a, b) => b[1] - a[1]).slice(0, 5);
+  const todayDone = done.filter((r) => dayKey(r.ends_at, tz) === today).length;
 
-  const month = monthRows ?? [];
-  const monthDone = month.filter((r) => r.status === "completed" || (r.status === "confirmed" && r.ends_at < nowIso));
-  const monthRevenue = monthDone.reduce((s, r) => s + r.price_cents, 0);
-
+  // Clientes
   const clients = stats ?? [];
-  const newThisMonth = clients.filter((c) => c.first_visit_at && dayKey(c.first_visit_at, tz) >= monthStart).length;
   const comeBack = clients
     .filter((c) => {
       const st = leadStatus(c, salon.inactive_after_days);
@@ -100,56 +189,85 @@ export default async function PainelPage() {
   const proto = h.get("x-forwarded-proto") ?? "https";
   const bookingLink = `${proto}://${host}/${salon.slug}`;
 
-  // agrupa a agenda de hoje por profissional
-  const byPro = new Map<string, { name: string; items: Appt[] }>();
-  for (const r of todayList) {
-    const g = byPro.get(r.professional_id) ?? { name: r.professional?.name ?? "", items: [] };
-    g.items.push(r);
-    byPro.set(r.professional_id, g);
-  }
-
   const firstName = (user.user_metadata?.full_name as string | undefined)?.split(" ")[0];
-  const setup = [
-    { done: (servicesCount ?? 0) > 0, label: "Cadastrar os serviços", href: "/painel/servicos" },
-    { done: (prosCount ?? 0) > 0, label: "Cadastrar a equipe e os horários", href: "/painel/profissionais" },
-    { done: !!salon.whatsapp, label: "Colocar WhatsApp, endereço e fotos", href: "/painel/configuracoes" },
-  ];
+  const setup = setupCounts
+    ? [
+        { done: (setupCounts[0].count ?? 0) > 0, label: "Cadastrar os serviços", href: "/painel/servicos" },
+        {
+          done: (setupCounts[1].count ?? 0) > 0,
+          label: "Cadastrar a equipe e os horários",
+          href: "/painel/profissionais",
+        },
+        { done: !!salon.whatsapp, label: "Colocar WhatsApp, endereço e fotos", href: "/painel/configuracoes" },
+      ]
+    : [];
+  const hour = Number(
+    new Intl.DateTimeFormat("en-GB", { timeZone: tz, hour: "2-digit", hour12: false }).format(new Date()),
+  );
+  const greeting = hour < 12 ? "Bom dia" : hour < 18 ? "Boa tarde" : "Boa noite";
+  const dayLabel = day === today ? "Hoje" : day === addDays(today, 1) ? "Amanhã" : longDay(day);
 
   return (
-    <main className="flex flex-col gap-6">
-      <PageHeader
-        title={`Olá${firstName ? `, ${firstName}` : ""}`}
-        subtitle={<span className="first-letter:uppercase">{formatLongDate(new Date(), tz)} · {salon.name}</span>}
-        actions={
-          <>
-            <LinkButton href="/painel/agenda/novo" variant="primary">+ Agendar</LinkButton>
-            <LinkButton href="/painel/agenda" variant="secondary">Agenda completa</LinkButton>
-            <LinkButton href="/painel/pacotes" variant="secondary">Pacotes</LinkButton>
-            <LinkButton href="/painel/avaliacoes" variant="secondary">Avaliações</LinkButton>
-          </>
-        }
-      />
+    <main className="flex flex-col gap-5">
+      {/* Abertura com a arte da marca */}
+      <section className="relative isolate overflow-hidden rounded-3xl bg-stone-950 px-5 py-6 text-stone-100 sm:px-7">
+        <div
+          aria-hidden
+          className="absolute inset-0 -z-10"
+          style={{
+            background:
+              "radial-gradient(90% 120% at 100% 0%, rgba(214,181,125,0.28), transparent 60%), radial-gradient(60% 80% at 0% 100%, rgba(148,107,52,0.18), transparent 70%)",
+          }}
+        />
+        <BrandMark className="pointer-events-none absolute -right-8 -top-6 -z-10 h-48 w-48 opacity-25 sm:h-56 sm:w-56" />
+        <p className="text-[11px] font-medium uppercase tracking-[0.28em] text-brand-300/90">{salon.name}</p>
+        <h1 className="mt-2 font-display text-3xl font-semibold">
+          {greeting}
+          {firstName ? `, ${firstName}` : ""}
+        </h1>
+        <p className="mt-1 text-sm text-stone-400 first-letter:uppercase">
+          {longDay(today)} ·{" "}
+          {counts[today] ? `${counts[today]} horário${counts[today] === 1 ? "" : "s"} hoje` : "nenhum horário hoje"}
+          {onlyMine ? " na sua agenda" : ""}
+        </p>
+        <div className="mt-5 flex flex-wrap gap-2">
+          <Link
+            href={`/painel/agenda/novo?data=${day}${onlyMine && myPro ? `&prof=${myPro}` : ""}`}
+            className="rounded-xl bg-gradient-to-b from-brand-200 to-brand-400 px-4 py-2.5 text-sm font-semibold text-stone-950 shadow-[0_8px_30px_-8px_rgba(214,181,125,0.6)]"
+          >
+            + Agendar
+          </Link>
+          <Link
+            href={`/painel/agenda?data=${day}`}
+            className="rounded-xl border border-white/15 bg-white/5 px-4 py-2.5 text-sm font-medium text-stone-100 hover:bg-white/10"
+          >
+            Abrir agenda
+          </Link>
+        </div>
+      </section>
 
-      {(packageRequests ?? 0) > 0 && (
-        <Link
-          href="/painel/pacotes#pedidos"
-          className="flex items-center justify-between gap-3 rounded-2xl border border-brand-300 bg-brand-50 px-4 py-3 text-sm font-medium text-brand-900 dark:border-brand-800 dark:bg-brand-950 dark:text-brand-100"
-        >
-          <span>
-            📦 {packageRequests} {packageRequests === 1 ? "pedido de pacote" : "pedidos de pacote"} pelo app esperando você
-          </span>
-          <span aria-hidden>›</span>
-        </Link>
+      {/* Avisos que pedem ação */}
+      {(joinRequests ?? 0) > 0 && (
+        <Notify href="/painel/profissionais#pedidos">
+          👋 {joinRequests} {joinRequests === 1 ? "pessoa pediu" : "pessoas pediram"} para entrar na equipe
+        </Notify>
       )}
-
-      {membership.role === "owner" && setup.some((s) => !s.done) && (
+      {(packageRequests ?? 0) > 0 && (
+        <Notify href="/painel/pacotes#pedidos">
+          📦 {packageRequests} {packageRequests === 1 ? "pedido de pacote" : "pedidos de pacote"} pelo app esperando
+          você
+        </Notify>
+      )}
+      {setup.some((s) => !s.done) && (
         <Card className="border-brand-200 bg-brand-50/60 dark:border-brand-900 dark:bg-brand-950/40">
           <h2 className="font-display text-lg font-semibold">Deixe o salão pronto</h2>
           <ul className="mt-2 flex flex-col gap-1.5 text-sm">
             {setup.map((s) => (
               <li key={s.label}>
                 <Link href={s.href} className="flex items-center gap-2">
-                  <span className={`flex h-5 w-5 items-center justify-center rounded-full text-[11px] ${s.done ? "bg-emerald-600 text-white" : "border border-stone-400"}`}>
+                  <span
+                    className={`flex h-5 w-5 items-center justify-center rounded-full text-[11px] ${s.done ? "bg-emerald-600 text-white" : "border border-stone-400"}`}
+                  >
                     {s.done ? "✓" : ""}
                   </span>
                   <span className={s.done ? "text-stone-400 line-through" : ""}>{s.label}</span>
@@ -160,31 +278,36 @@ export default async function PainelPage() {
         </Card>
       )}
 
-      <div className="grid grid-cols-2 gap-3 lg:grid-cols-4">
-        <Stat label="Hoje" value={`${todayActive.length} horário${todayActive.length === 1 ? "" : "s"}`} hint={`${done} atendido(s) · ${noShows} falta(s)`} />
-        <Stat label="Previsto hoje" value={formatPrice(expected)} />
-        <Stat label="Faturado no mês" value={formatPrice(monthRevenue)} hint={`${monthDone.length} atendimento(s)`} />
-        <Stat label="Clientes" value={clients.length} hint={`${newThisMonth} novo(s) este mês`} />
-      </div>
+      <div className="grid gap-5 lg:grid-cols-[1fr_340px]">
+        <div className="flex min-w-0 flex-col gap-4">
+          {/* Escolha do dia */}
+          <DayStrip
+            start={today}
+            selected={day}
+            today={today}
+            counts={counts}
+            href={(d) => (d === today ? "/painel" : `/painel?dia=${d}`)}
+          />
 
-      <div className="grid gap-6 lg:grid-cols-[1fr_340px]">
-        {/* Agenda de hoje */}
-        <div className="flex flex-col gap-4">
           {next && (
-            <Card className="flex items-center gap-4">
-              <div className="flex h-14 w-14 shrink-0 flex-col items-center justify-center rounded-xl bg-stone-900 text-white dark:bg-stone-100 dark:text-stone-900">
-                <span className="text-[10px] uppercase tracking-wider opacity-70">próx.</span>
+            <Card className="flex items-center gap-4 border-brand-300 dark:border-brand-800">
+              <div className="flex h-14 w-14 shrink-0 flex-col items-center justify-center rounded-2xl bg-stone-950 text-brand-200">
+                <span className="text-[10px] uppercase tracking-wider opacity-70">próximo</span>
                 <span className="font-semibold">{formatTime(next.starts_at, tz)}</span>
               </div>
               <div className="min-w-0 flex-1">
                 <p className="truncate font-semibold">{next.client?.name ?? "Cliente"}</p>
                 <p className="truncate text-sm text-stone-500">
-                  {next.service?.name} com {next.professional?.name}
+                  {next.service?.name}
+                  {onlyMine ? "" : ` com ${next.professional?.name}`}
                 </p>
               </div>
               {next.client?.phone && (
                 <a
-                  href={whatsappLink(next.client.phone, `Olá ${next.client.name ?? ""}! Passando para lembrar do seu horário hoje às ${formatTime(next.starts_at, tz)} no ${salon.name}. Te esperamos!`)}
+                  href={whatsappLink(
+                    next.client.phone,
+                    `Olá ${next.client.name ?? ""}! Passando para lembrar do seu horário hoje às ${formatTime(next.starts_at, tz)} no ${salon.name}. Te esperamos!`,
+                  )}
                   target="_blank"
                   rel="noreferrer"
                   className="rounded-xl bg-[#1f9d55] px-3 py-2 text-xs font-semibold text-white"
@@ -195,27 +318,56 @@ export default async function PainelPage() {
             </Card>
           )}
 
+          {/* Agenda do dia */}
           <Card className="p-0">
-            <div className="flex items-center justify-between border-b border-stone-100 px-4 py-3 sm:px-5 dark:border-stone-800">
-              <h2 className="font-display text-lg font-semibold">Agenda de hoje</h2>
-              <Link href="/painel/agenda" className="text-sm text-brand-700 dark:text-brand-300">Ver tudo ›</Link>
+            <div className="flex items-center justify-between gap-2 border-b border-stone-100 px-4 py-3 sm:px-5 dark:border-stone-800">
+              <div>
+                <h2 className="font-display text-lg font-semibold first-letter:uppercase">
+                  {onlyMine ? "Minha agenda" : "Agenda"} · {dayLabel}
+                </h2>
+                <p className="text-xs text-stone-500">
+                  {active.length} horário{active.length === 1 ? "" : "s"}
+                  {showMoney && active.length > 0 ? ` · ${formatPrice(expected)} previsto` : ""}
+                </p>
+              </div>
+              <Link href={`/painel/agenda?data=${day}`} className="text-sm text-brand-700 dark:text-brand-300">
+                Ver dia ›
+              </Link>
             </div>
-            {todayList.length === 0 ? (
-              <p className="px-4 py-8 text-center text-sm text-stone-500 sm:px-5">Nenhum horário marcado para hoje.</p>
+            {list.length === 0 ? (
+              <div className="flex flex-col items-center gap-2 px-4 py-10 text-center">
+                <BrandMark className="h-10 w-10 opacity-40" />
+                <p className="text-sm text-stone-500">
+                  Nenhum horário marcado {day === today ? "para hoje" : "neste dia"}.
+                </p>
+              </div>
             ) : (
               <div className="divide-y divide-stone-100 dark:divide-stone-800">
-                {[...byPro.values()].map((g) => (
-                  <div key={g.name} className="px-4 py-3 sm:px-5">
-                    <p className="mb-2 text-xs font-medium uppercase tracking-wider text-stone-500">{g.name}</p>
-                    <ul className="flex flex-col gap-2">
+                {[...byPro.entries()].map(([id, g]) => (
+                  <div key={id} className="px-4 py-3 sm:px-5">
+                    {!onlyMine && (
+                      <p className="mb-2 text-xs font-medium uppercase tracking-wider text-stone-500">{g.name}</p>
+                    )}
+                    <ul className="flex flex-col">
                       {g.items.map((r) => (
-                        <li key={r.id} className={`flex items-center gap-3 ${r.status === "cancelled" ? "opacity-50" : ""}`}>
+                        <li
+                          key={r.id}
+                          className={`flex items-center gap-3 py-1.5 ${r.status === "cancelled" ? "opacity-45" : ""}`}
+                        >
                           <span className="w-12 font-mono text-sm tabular-nums">{formatTime(r.starts_at, tz)}</span>
-                          <span className="min-w-0 flex-1 truncate text-sm">
+                          <span
+                            className={`h-2 w-2 shrink-0 rounded-full ${STATUS[r.status].dot}`}
+                            title={STATUS[r.status].label}
+                          />
+                          <span
+                            className={`min-w-0 flex-1 truncate text-sm ${r.status === "cancelled" ? "line-through" : ""}`}
+                          >
                             <span className="font-medium">{r.client?.name ?? "Cliente"}</span>
                             <span className="text-stone-500"> · {r.service?.name}</span>
                           </span>
-                          <Badge className={STATUS[r.status].cls}>{STATUS[r.status].label}</Badge>
+                          {r.status !== "confirmed" && (
+                            <span className="text-xs text-stone-500">{STATUS[r.status].label}</span>
+                          )}
                         </li>
                       ))}
                     </ul>
@@ -226,45 +378,94 @@ export default async function PainelPage() {
           </Card>
 
           {(freedCount ?? 0) > 0 && (
-            <Link href="/painel/agenda" className="rounded-2xl border border-amber-200 bg-amber-50 px-4 py-3 text-sm text-amber-900 dark:border-amber-900 dark:bg-amber-950 dark:text-amber-200">
+            <Link
+              href="/painel/agenda"
+              className="rounded-2xl border border-amber-200 bg-amber-50 px-4 py-3 text-sm text-amber-900 dark:border-amber-900 dark:bg-amber-950 dark:text-amber-200"
+            >
               <b>{freedCount} vaga(s) liberada(s)</b> por clientes que desmarcaram. Toque para divulgar ›
             </Link>
           )}
-
-          <ShareLink slug={salon.slug} salonName={salon.name} />
         </div>
 
         {/* Coluna lateral */}
         <div className="flex flex-col gap-4">
+          {/* Produção do mês */}
           <Card className="p-0">
-            <div className="flex items-center justify-between border-b border-stone-100 px-4 py-3 dark:border-stone-800">
-              <h2 className="font-display text-lg font-semibold">Chamar de volta</h2>
-              <Link href="/painel/clientes" className="text-sm text-brand-700 dark:text-brand-300">{comeBack.length} ›</Link>
+            <div className="border-b border-stone-100 px-4 py-3 dark:border-stone-800">
+              <h2 className="font-display text-lg font-semibold">{onlyMine ? "Minha produção" : "Produção do mês"}</h2>
+              <p className="text-xs text-stone-500">
+                {done.length} atendimento{done.length === 1 ? "" : "s"} no mês · {todayDone} hoje
+                {showMoney ? ` · ${formatPrice(monthRevenue)}` : ""}
+              </p>
             </div>
-            {comeBack.length === 0 ? (
-              <p className="px-4 py-6 text-center text-sm text-stone-500">Ninguém atrasado. Ótimo!</p>
-            ) : (
+            {!onlyMine && teamList.length > 0 && (
               <ul className="divide-y divide-stone-100 dark:divide-stone-800">
-                {comeBack.slice(0, 5).map((c) => (
-                  <li key={c.client_id} className="flex items-center gap-3 px-4 py-2.5">
-                    <Avatar name={c.name} size={34} />
-                    <Link href={`/painel/clientes/${c.client_id}`} className="min-w-0 flex-1">
-                      <p className="truncate text-sm font-medium">{c.name ?? c.phone}</p>
-                      <p className="text-xs text-stone-500">há {daysSince(c.last_visit_at)} dias</p>
-                    </Link>
-                    <a
-                      href={whatsappLink(c.phone, comeBackMessage(c, salon.name, bookingLink))}
-                      target="_blank"
-                      rel="noreferrer"
-                      className="rounded-lg border border-emerald-600/40 px-2.5 py-1 text-xs font-medium text-emerald-700 dark:text-emerald-400"
-                    >
-                      Chamar
-                    </a>
+                {teamList.map((t) => (
+                  <li key={t.name} className="flex items-center gap-3 px-4 py-2.5">
+                    <Avatar name={t.name} size={30} />
+                    <span className="min-w-0 flex-1 truncate text-sm font-medium">{t.name}</span>
+                    <span className="text-sm tabular-nums text-stone-600 dark:text-stone-300">{t.count}</span>
+                    {showMoney && (
+                      <span className="w-24 text-right text-sm font-semibold tabular-nums">{formatPrice(t.cents)}</span>
+                    )}
                   </li>
                 ))}
               </ul>
             )}
+            {topServices.length > 0 ? (
+              <div className="px-4 py-3">
+                <p className="mb-2 text-xs font-medium uppercase tracking-wider text-stone-500">Mais feitos</p>
+                <ul className="flex flex-col gap-1.5">
+                  {topServices.map(([name, n]) => (
+                    <li key={name} className="flex items-center gap-2 text-sm">
+                      <span className="min-w-0 flex-1 truncate">{name}</span>
+                      <span
+                        className="h-1.5 rounded-full bg-brand-300"
+                        style={{ width: `${Math.max(8, (n / topServices[0][1]) * 80)}px` }}
+                      />
+                      <span className="w-6 text-right tabular-nums text-stone-500">{n}</span>
+                    </li>
+                  ))}
+                </ul>
+              </div>
+            ) : (
+              <p className="px-4 py-6 text-center text-sm text-stone-500">Nenhum atendimento ainda este mês.</p>
+            )}
           </Card>
+
+          {owner && (
+            <Card className="p-0">
+              <div className="flex items-center justify-between border-b border-stone-100 px-4 py-3 dark:border-stone-800">
+                <h2 className="font-display text-lg font-semibold">Chamar de volta</h2>
+                <Link href="/painel/clientes" className="text-sm text-brand-700 dark:text-brand-300">
+                  {comeBack.length} ›
+                </Link>
+              </div>
+              {comeBack.length === 0 ? (
+                <p className="px-4 py-6 text-center text-sm text-stone-500">Ninguém atrasado. Ótimo!</p>
+              ) : (
+                <ul className="divide-y divide-stone-100 dark:divide-stone-800">
+                  {comeBack.slice(0, 5).map((c) => (
+                    <li key={c.client_id} className="flex items-center gap-3 px-4 py-2.5">
+                      <Avatar name={c.name} size={34} />
+                      <Link href={`/painel/clientes/${c.client_id}`} className="min-w-0 flex-1">
+                        <p className="truncate text-sm font-medium">{c.name ?? c.phone}</p>
+                        <p className="text-xs text-stone-500">há {daysSince(c.last_visit_at)} dias</p>
+                      </Link>
+                      <a
+                        href={whatsappLink(c.phone, comeBackMessage(c, salon.name, bookingLink))}
+                        target="_blank"
+                        rel="noreferrer"
+                        className="rounded-lg border border-emerald-600/40 px-2.5 py-1 text-xs font-medium text-emerald-700 dark:text-emerald-400"
+                      >
+                        Chamar
+                      </a>
+                    </li>
+                  ))}
+                </ul>
+              )}
+            </Card>
+          )}
 
           {birthdays.length > 0 && (
             <Card className="p-0">
@@ -294,8 +495,22 @@ export default async function PainelPage() {
               </ul>
             </Card>
           )}
+
+          <ShareLink slug={salon.slug} salonName={salon.name} />
         </div>
       </div>
     </main>
+  );
+}
+
+function Notify({ href, children }: { href: string; children: React.ReactNode }) {
+  return (
+    <Link
+      href={href}
+      className="flex items-center justify-between gap-3 rounded-2xl border border-brand-300 bg-brand-50 px-4 py-3 text-sm font-medium text-brand-900 dark:border-brand-800 dark:bg-brand-950 dark:text-brand-100"
+    >
+      <span>{children}</span>
+      <span aria-hidden>›</span>
+    </Link>
   );
 }

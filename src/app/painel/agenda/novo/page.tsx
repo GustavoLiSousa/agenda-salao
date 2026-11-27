@@ -1,5 +1,6 @@
 import Link from "next/link";
 import { Card } from "@/components/ui";
+import { can } from "@/lib/permissions";
 import { requireSalon } from "@/lib/session";
 import { isValidDay, todayIn } from "@/lib/time";
 import { StaffBookingForm } from "./form";
@@ -16,7 +17,7 @@ export default async function NovoAgendamentoPage({
   const salon = membership.salon;
 
   let prosQuery = supabase.from("professionals").select("id, name").eq("salon_id", salon.id).eq("active", true).order("name");
-  if (membership.role === "professional" && membership.professional_id) prosQuery = prosQuery.eq("id", membership.professional_id);
+  if (!can(membership, "agenda_equipe")) prosQuery = prosQuery.eq("id", membership.professional_id ?? "00000000-0000-0000-0000-000000000000");
 
   const [{ data: pros }, { data: services }] = await Promise.all([
     prosQuery,

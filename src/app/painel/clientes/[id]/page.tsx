@@ -2,6 +2,7 @@ import { notFound } from "next/navigation";
 import { Avatar, Badge, Button, Card, Field, LinkButton, Notice, PageHeader, Stat } from "@/components/ui";
 import { daysSince, LEAD_LABEL, leadStatus, RETURN_SOURCE_LABEL, type ClientStats } from "@/lib/clients";
 import { formatPhone, formatPrice, whatsappLink } from "@/lib/format";
+import { can } from "@/lib/permissions";
 import { requireSalon } from "@/lib/session";
 import { addDays, dayKey, formatTime, shortDay, todayIn } from "@/lib/time";
 import type { AppointmentStatus } from "@/lib/types";
@@ -130,7 +131,7 @@ export default async function ClientePage({
       <div className="grid grid-cols-2 gap-3 sm:grid-cols-4">
         <Stat label="Visitas" value={c.visits} hint={c.no_shows ? `${c.no_shows} falta(s)` : undefined} />
         <Stat label="Última visita" value={since === null ? "–" : `há ${since}d`} />
-        <Stat label="Gasto total" value={formatPrice(c.total_spent_cents)} />
+        <Stat label="Gasto total" value={can(membership, "faturamento") ? formatPrice(c.total_spent_cents) : "–"} />
         <Stat
           label="Próximo"
           value={c.next_appointment_at ? shortDay(dayKey(c.next_appointment_at, tz)) : "–"}
@@ -245,7 +246,9 @@ export default async function ClientePage({
                 </div>
                 <div className="flex flex-col items-end gap-1">
                   <Badge className={STATUS[h.status].cls}>{STATUS[h.status].label}</Badge>
-                  <span className="text-xs text-stone-500">{formatPrice(h.price_cents)}</span>
+                  {can(membership, "faturamento") && (
+                    <span className="text-xs text-stone-500">{formatPrice(h.price_cents)}</span>
+                  )}
                 </div>
               </li>
             ))}
