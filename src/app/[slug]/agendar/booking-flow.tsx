@@ -23,6 +23,8 @@ type Props = {
   initialService: string | null;
   initialProfessional: string | null;
   rescheduleToken: string | null;
+  initialName?: string;
+  initialPhone?: string;
 };
 
 const DAYS_AHEAD = 45;
@@ -57,8 +59,8 @@ export function BookingFlow(props: Props) {
   const [loadError, setLoadError] = useState<string | null>(null);
   const [day, setDay] = useState<string | null>(null);
   const [slot, setSlot] = useState<string | null>(null);
-  const [name, setName] = useState("");
-  const [phone, setPhone] = useState("");
+  const [name, setName] = useState(props.initialName ?? "");
+  const [phone, setPhone] = useState(props.initialPhone ?? "");
   const [state, action, pending] = useActionState<BookState, FormData>(bookAction, {});
 
   const service = services.find((s) => s.id === serviceId) ?? null;
@@ -106,10 +108,10 @@ export function BookingFlow(props: Props) {
   useEffect(() => {
     try {
       const saved = JSON.parse(localStorage.getItem(STORAGE_KEY) ?? "{}");
-      if (saved.name) setName(saved.name);
-      if (saved.phone) setPhone(saved.phone);
+      if (saved.name && !props.initialName) setName(saved.name);
+      if (saved.phone && !props.initialPhone) setPhone(saved.phone);
     } catch {}
-  }, []);
+  }, [props.initialName, props.initialPhone]);
 
   const byDay = useMemo(() => {
     const map = new Map<string, string[]>();
