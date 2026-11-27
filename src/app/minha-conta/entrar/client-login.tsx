@@ -1,12 +1,14 @@
 "use client";
 
 import { useActionState, useState } from "react";
-import { Button, Field, Notice } from "@/components/ui";
+import { Input, Message, PasswordInput, goldButton } from "@/app/entrar/fields";
 import { googleSignIn, passwordSignIn, sendCode, verifyCode, type ClientAuthState } from "./actions";
 
 // O botão do Google só aparece depois que o provedor Google for ativado no Supabase
 // (variável NEXT_PUBLIC_GOOGLE_LOGIN=on na Vercel).
 const googleEnabled = process.env.NEXT_PUBLIC_GOOGLE_LOGIN === "on";
+
+const linkButton = "text-sm text-stone-400 underline-offset-4 transition hover:text-white hover:underline";
 
 export function ClientLogin({ next }: { next: string }) {
   const [mode, setMode] = useState<"senha" | "codigo">("senha");
@@ -16,12 +18,12 @@ export function ClientLogin({ next }: { next: string }) {
   const email = checked.sentTo ?? sent.sentTo;
 
   return (
-    <div className="flex flex-col gap-5">
+    <div className="flex flex-col gap-4">
       {googleEnabled && (
         <>
           <form action={googleSignIn}>
             <input type="hidden" name="next" value={next} />
-            <button className="flex w-full items-center justify-center gap-3 rounded-2xl border border-stone-300 bg-white py-3.5 font-semibold text-stone-800 shadow-sm transition hover:border-stone-500 active:scale-[0.99] dark:border-stone-700 dark:bg-stone-900 dark:text-stone-100">
+            <button className="flex w-full items-center justify-center gap-3 rounded-2xl border border-white/10 bg-white py-3.5 font-semibold text-stone-800 shadow-sm transition hover:bg-stone-100 active:scale-[0.99]">
               <svg width="20" height="20" viewBox="0 0 48 48" aria-hidden>
                 <path
                   fill="#FFC107"
@@ -44,10 +46,10 @@ export function ClientLogin({ next }: { next: string }) {
             </button>
           </form>
 
-          <div className="flex items-center gap-3 text-xs uppercase tracking-widest text-stone-400">
-            <span className="h-px flex-1 bg-stone-200 dark:bg-stone-800" />
+          <div className="flex items-center gap-3 text-xs uppercase tracking-widest text-stone-500">
+            <span className="h-px flex-1 bg-white/10" />
             ou
-            <span className="h-px flex-1 bg-stone-200 dark:bg-stone-800" />
+            <span className="h-px flex-1 bg-white/10" />
           </div>
         </>
       )}
@@ -56,19 +58,20 @@ export function ClientLogin({ next }: { next: string }) {
         <>
           <form action={signIn} className="flex flex-col gap-3">
             <input type="hidden" name="next" value={next} />
-            <Field label="Seu e-mail" name="email" type="email" autoComplete="email" inputMode="email" required />
-            <Field label="Senha" name="password" type="password" autoComplete="current-password" required />
-            {signed.error && <Notice kind="error">{signed.error}</Notice>}
-            <Button disabled={signingIn} className="rounded-2xl py-3.5">
+            <Input label="Seu e-mail" name="email" type="email" autoComplete="email" inputMode="email" required />
+            <PasswordInput label="Senha" name="password" autoComplete="current-password" required />
+            {signed.error && <Message kind="error">{signed.error}</Message>}
+            <button disabled={signingIn} className={goldButton}>
               {signingIn ? "Entrando..." : "Entrar"}
-            </Button>
+              {!signingIn && <span aria-hidden>→</span>}
+            </button>
           </form>
           <button
             type="button"
             onClick={() => setMode("codigo")}
-            className="rounded-2xl border border-stone-200 px-4 py-3 text-sm text-stone-600 transition hover:border-stone-400 hover:text-stone-900 dark:border-stone-800 dark:text-stone-300 dark:hover:text-white"
+            className="rounded-xl border border-white/10 bg-white/[0.03] px-4 py-3 text-sm leading-relaxed text-stone-300 transition hover:border-brand-300/40 hover:text-white"
           >
-            <b>Primeiro acesso</b> ou <b>esqueceu a senha</b>?
+            <b className="text-brand-200">Primeiro acesso</b> ou <b className="text-brand-200">esqueceu a senha</b>?
             <br />
             Entre com um código no seu e-mail
           </button>
@@ -77,18 +80,16 @@ export function ClientLogin({ next }: { next: string }) {
         <>
           <form action={send} className="flex flex-col gap-3">
             <input type="hidden" name="next" value={next} />
-            <Notice>Vamos mandar um código para o seu e-mail. Depois de entrar, você cria sua senha.</Notice>
-            <Field label="Seu e-mail" name="email" type="email" autoComplete="email" inputMode="email" required />
-            {sent.error && <Notice kind="error">{sent.error}</Notice>}
-            <Button disabled={sending} className="rounded-2xl py-3.5">
+            <Message kind="info">
+              Vamos mandar um código para o seu e-mail. Depois de entrar, você cria sua senha.
+            </Message>
+            <Input label="Seu e-mail" name="email" type="email" autoComplete="email" inputMode="email" required />
+            {sent.error && <Message kind="error">{sent.error}</Message>}
+            <button disabled={sending} className={goldButton}>
               {sending ? "Enviando..." : "Receber código por e-mail"}
-            </Button>
+            </button>
           </form>
-          <button
-            type="button"
-            onClick={() => setMode("senha")}
-            className="text-sm text-stone-500 underline-offset-4 hover:text-stone-900 hover:underline dark:hover:text-white"
-          >
+          <button type="button" onClick={() => setMode("senha")} className={linkButton}>
             Já tenho senha
           </button>
         </>
@@ -96,10 +97,10 @@ export function ClientLogin({ next }: { next: string }) {
         <form action={check} className="flex flex-col gap-3">
           <input type="hidden" name="next" value={next} />
           <input type="hidden" name="email" value={email} />
-          <Notice>
+          <Message kind="info">
             Enviamos um código para <b>{email}</b>. Digite aqui (ou toque no link do e-mail). Veja também o spam.
-          </Notice>
-          <Field
+          </Message>
+          <Input
             label="Código"
             name="code"
             inputMode="numeric"
@@ -109,10 +110,10 @@ export function ClientLogin({ next }: { next: string }) {
             required
             autoFocus
           />
-          {checked.error && <Notice kind="error">{checked.error}</Notice>}
-          <Button disabled={checking} className="rounded-2xl py-3.5">
+          {checked.error && <Message kind="error">{checked.error}</Message>}
+          <button disabled={checking} className={goldButton}>
             {checking ? "Entrando..." : "Entrar"}
-          </Button>
+          </button>
         </form>
       )}
     </div>
