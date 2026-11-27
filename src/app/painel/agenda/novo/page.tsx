@@ -19,9 +19,16 @@ export default async function NovoAgendamentoPage({
   let prosQuery = supabase.from("professionals").select("id, name").eq("salon_id", salon.id).eq("active", true).order("name");
   if (!can(membership, "agenda_equipe")) prosQuery = prosQuery.eq("id", membership.professional_id ?? "00000000-0000-0000-0000-000000000000");
 
-  const [{ data: pros }, { data: services }] = await Promise.all([
+  const [{ data: pros }, { data: services }, { data: clients }] = await Promise.all([
     prosQuery,
     supabase.from("services").select("id, name").eq("salon_id", salon.id).eq("active", true).order("name"),
+    supabase
+      .from("clients")
+      .select("id, name, phone")
+      .eq("salon_id", salon.id)
+      .order("name")
+      .limit(5000)
+      .returns<{ id: string; name: string | null; phone: string }[]>(),
   ]);
   const ids = (pros ?? []).map((p) => p.id);
   const { data: links } = ids.length
@@ -45,6 +52,7 @@ export default async function NovoAgendamentoPage({
           initialProfessional={q.prof ?? ""}
           initialName={q.nome ?? ""}
           initialPhone={q.tel ?? ""}
+          clients={clients ?? []}
           initialTime={/^\d{2}:\d{2}$/.test(q.hora ?? "") ? q.hora : ""}
         />
       </Card>
