@@ -55,3 +55,25 @@ export type MyAppointment = {
   cancel_min_hours: number;
   reviewed?: boolean;
 };
+
+export type MyPackage = {
+  id: string;
+  name: string;
+  status: string;
+  purchased_at: string;
+  expires_at: string | null;
+  salon_name: string;
+  salon_slug: string;
+  items: { service: string; quantity: number; used: number }[];
+};
+
+export type MyPackageRequest = {
+  id: string;
+  status: "pending" | "sold" | "declined" | "cancelled";
+  created_at: string;
+  package_id: string;
+  package_name: string;
+  price_cents: number;
+  salon_name: string;
+  salon_slug: string;
+};
