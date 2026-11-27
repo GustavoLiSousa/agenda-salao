@@ -3,6 +3,7 @@
 import { revalidatePath } from "next/cache";
 import { redirect } from "next/navigation";
 import { parseIntOrNull } from "@/lib/parse";
+import { readPermissions } from "@/lib/permissions";
 import { requireSalon } from "@/lib/session";
 import { zonedToDate } from "@/lib/time";
 import { uploadImage } from "@/lib/upload";
@@ -14,24 +15,18 @@ function fail(id: string | null, message: string): never {
   back(id, `erro=${encodeURIComponent(message)}`);
 }
 
-export async function createProfessional(formData: FormData) {
-  const { supabase, membership } = await requireSalon();
-  const name = String(formData.get("name") ?? "").trim();
-  if (name.length < 2) fail(null, "Informe o nome do profissional.");
+type Supa = Awaited<ReturnType<typeof requireSalon>>["supabase"];
 
+/** Cria o profissional já com todos os serviços ativos e horário padrão ter-sáb 9h-12h / 13h-19h. */
+async function insertProfessional(supabase: Supa, salonId: string, name: string, phone?: string | null) {
   const { data, error } = await supabase
     .from("professionals")
-    .insert({ salon_id: membership.salon.id, name })
+    .insert({ salon_id: salonId, name, phone: phone || null })
     .select("id")
     .single();
-  if (error || !data) fail(null, error?.message ?? "Erro ao salvar.");
+  if (error || !data) return { error: error?.message ?? "Erro ao salvar." };
 
-  // Começa fazendo todos os serviços ativos e com horário padrão ter-sáb 9h-12h / 13h-19h
-  const { data: services } = await supabase
-    .from("services")
-    .select("id")
-    .eq("salon_id", membership.salon.id)
-    .eq("active", true);
+  const { data: services } = await supabase.from("services").select("id").eq("salon_id", salonId).eq("active", true);
   if (services?.length) {
     await supabase
       .from("professional_services")
@@ -42,9 +37,82 @@ export async function createProfessional(formData: FormData) {
     { professional_id: data.id, weekday, start_time: "13:00", end_time: "19:00" },
   ]);
   await supabase.from("working_hours").insert(hours);
+  return { id: data.id as string };
+}
 
+export async function createProfessional(formData: FormData) {
+  const { supabase, membership } = await requireSalon();
+  const name = String(formData.get("name") ?? "").trim();
+  if (name.length < 2) fail(null, "Informe o nome do profissional.");
+  const res = await insertProfessional(supabase, membership.salon.id, name);
+  if (!res.id) fail(null, res.error ?? "Erro ao salvar.");
   revalidatePath("/painel/profissionais");
-  redirect(`/painel/profissionais/${data.id}?novo=1`);
+  redirect(`/painel/profissionais/${res.id}?novo=1`);
+}
+
+/** Dono aprova (ligando a um profissional ou criando um novo) ou recusa quem pediu para entrar. */
+export async function handleJoinRequest(formData: FormData) {
+  const { supabase, membership } = await requireSalon();
+  if (membership.role !== "owner") fail(null, "Só o dono do salão pode aprovar a equipe.");
+  const id = String(formData.get("request_id") ?? "");
+  const accept = formData.get("accept") === "1";
+  let pro = String(formData.get("professional_id") ?? "") || null;
+
+  if (accept && !pro) {
+    const { data: req } = await supabase
+      .from("salon_join_requests")
+      .select("name, phone")
+      .eq("id", id)
+      .maybeSingle<{ name: string; phone: string | null }>();
+    if (!req) fail(null, "Pedido não encontrado.");
+    const res = await insertProfessional(supabase, membership.salon.id, req.name, req.phone);
+    if (!res.id) fail(null, res.error ?? "Erro ao criar o profissional.");
+    pro = res.id;
+  }
+
+  const { error } = await supabase.rpc("handle_join_request", {
+    p_request: id,
+    p_accept: accept,
+    p_professional: pro,
+    p_permissions: readPermissions(formData),
+  });
+  if (error) fail(null, error.message);
+  revalidatePath("/painel", "layout");
+  if (accept && pro) redirect(`/painel/profissionais/${pro}?ok=acesso#acesso`);
+  back(null, "ok=recusado");
+}
+
+/** O que o funcionário pode fazer no app. */
+export async function savePermissions(formData: FormData) {
+  const { supabase, membership } = await requireSalon();
+  const id = String(formData.get("id"));
+  if (membership.role !== "owner") fail(id, "Só o dono do salão muda permissões.");
+  const { error } = await supabase
+    .from("salon_members")
+    .update({ permissions: readPermissions(formData) })
+    .eq("salon_id", membership.salon.id)
+    .eq("user_id", String(formData.get("user_id")))
+    .eq("role", "professional");
+  if (error) fail(id, error.message);
+  revalidatePath(`/painel/profissionais/${id}`);
+  back(id, "ok=permissoes#acesso");
+}
+
+/** Tira o acesso do funcionário ao app (o profissional e o histórico continuam). */
+export async function removeAccess(formData: FormData) {
+  const { supabase, membership } = await requireSalon();
+  const id = String(formData.get("id"));
+  if (membership.role !== "owner") fail(id, "Só o dono do salão tira acessos.");
+  const { error } = await supabase
+    .from("salon_members")
+    .delete()
+    .eq("salon_id", membership.salon.id)
+    .eq("user_id", String(formData.get("user_id")))
+    .eq("role", "professional");
+  if (error) fail(id, error.message);
+  await supabase.from("professionals").update({ user_id: null }).eq("id", id);
+  revalidatePath(`/painel/profissionais/${id}`);
+  back(id, "ok=sem-acesso#acesso");
 }
 
 export async function saveProfessional(formData: FormData) {

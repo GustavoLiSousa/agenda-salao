@@ -2,7 +2,7 @@ import { ImageInput } from "@/components/image-input";
 import { Button, Card, Field, GhostButton, Notice, PageHeader } from "@/components/ui";
 import { formatDuration, formatPrice } from "@/lib/format";
 import { centsToInput } from "@/lib/parse";
-import { requireSalon } from "@/lib/session";
+import { requirePermission } from "@/lib/session";
 import type { Service } from "@/lib/types";
 import { deleteService, saveService, toggleService } from "./actions";
 
@@ -52,7 +52,7 @@ export default async function ServicosPage({
   searchParams: Promise<{ erro?: string; ok?: string }>;
 }) {
   const { erro, ok } = await searchParams;
-  const { supabase, membership } = await requireSalon();
+  const { supabase, membership } = await requirePermission("precos");
   const { data: services } = await supabase
     .from("services")
     .select("*")

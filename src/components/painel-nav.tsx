@@ -18,12 +18,18 @@ export const NAV = [
   { href: "/painel", label: "Início", icon: I.home },
   { href: "/painel/agenda", label: "Agenda", icon: I.agenda },
   { href: "/painel/clientes", label: "Clientes", icon: I.clients },
-  { href: "/painel/servicos", label: "Serviços", icon: I.services },
-  { href: "/painel/profissionais", label: "Equipe", icon: I.team },
-  { href: "/painel/pacotes", label: "Pacotes", icon: I.box, desktopOnly: true },
-  { href: "/painel/avaliacoes", label: "Avaliações", icon: I.star, desktopOnly: true },
-  { href: "/painel/configuracoes", label: "Ajustes", icon: I.settings },
+  { href: "/painel/servicos", label: "Serviços", icon: I.services, perm: "precos" },
+  { href: "/painel/profissionais", label: "Equipe", icon: I.team, ownerOnly: true },
+  { href: "/painel/pacotes", label: "Pacotes", icon: I.box, desktopOnly: true, perm: "pacotes" },
+  { href: "/painel/avaliacoes", label: "Avaliações", icon: I.star, desktopOnly: true, ownerOnly: true },
+  { href: "/painel/configuracoes", label: "Ajustes", icon: I.settings, ownerOnly: true },
 ];
+
+export type NavAccess = { owner: boolean; perms: string[] };
+
+/** O funcionário vê Início, Agenda, Clientes e o que o dono liberou. */
+const visible = ({ owner, perms }: NavAccess) =>
+  NAV.filter((n) => owner || ("perm" in n ? perms.includes(n.perm ?? "") : !("ownerOnly" in n)));
 
 function useActive() {
   const path = usePathname();
@@ -39,11 +45,11 @@ function Icon({ d }: { d: string }) {
 }
 
 /** Abas no topo (computador) */
-export function TopNav() {
+export function TopNav({ access }: { access: NavAccess }) {
   const active = useActive();
   return (
     <nav className="hidden gap-1 md:flex">
-      {NAV.map((n) => (
+      {visible(access).map((n) => (
         <Link
           key={n.href}
           href={n.href}
@@ -61,12 +67,13 @@ export function TopNav() {
 }
 
 /** Barra de baixo (celular) */
-export function BottomNav() {
+export function BottomNav({ access }: { access: NavAccess }) {
   const active = useActive();
+  const items = visible(access).filter((n) => !("desktopOnly" in n));
   return (
     <nav className="fixed inset-x-0 bottom-0 z-20 border-t border-stone-200 bg-white/95 pb-[env(safe-area-inset-bottom)] backdrop-blur md:hidden dark:border-stone-800 dark:bg-stone-950/95">
-      <div className="grid grid-cols-6">
-        {NAV.filter((n) => !("desktopOnly" in n)).map((n) => {
+      <div className="grid" style={{ gridTemplateColumns: `repeat(${items.length}, minmax(0, 1fr))` }}>
+        {items.map((n) => {
           const on = active(n.href);
           return (
             <Link

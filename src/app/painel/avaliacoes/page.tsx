@@ -1,6 +1,6 @@
 import { Card, GhostButton, Notice, PageHeader, inputClass } from "@/components/ui";
 import { Stars, formatRating } from "@/components/stars";
-import { requireSalon } from "@/lib/session";
+import { requireOwner } from "@/lib/session";
 import { replyReview, toggleHidden } from "./actions";
 
 export const dynamic = "force-dynamic";
@@ -20,7 +20,7 @@ type Row = {
 
 export default async function AvaliacoesPage({ searchParams }: { searchParams: Promise<{ ok?: string; erro?: string }> }) {
   const q = await searchParams;
-  const { supabase, membership } = await requireSalon();
+  const { supabase, membership } = await requireOwner();
   const salon = membership.salon;
   const { data } = await supabase
     .from("reviews")
