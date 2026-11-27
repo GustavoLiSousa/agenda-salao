@@ -1,3 +1,4 @@
+import Link from "next/link";
 import { notFound } from "next/navigation";
 import { createClient, isSupabaseConfigured } from "@/lib/supabase/server";
 import { formatDuration, formatPrice, whatsappLink } from "@/lib/format";
@@ -55,18 +56,34 @@ export default async function SalonPage({
         )}
       </header>
 
+      <Link
+        href={`/${salon.slug}/agendar`}
+        className="rounded-xl bg-violet-600 p-4 text-center text-lg font-semibold text-white"
+      >
+        Agendar horário
+      </Link>
+
       <section>
         <h2 className="mb-2 font-semibold">Serviços</h2>
         <ul className="divide-y divide-neutral-200 rounded-xl border border-neutral-200 bg-white dark:divide-neutral-800 dark:border-neutral-800 dark:bg-neutral-900">
           {(services ?? []).map((s) => (
-            <li key={s.id} className="flex items-center justify-between p-3">
-              <div>
-                <p className="font-medium">{s.name}</p>
-                <p className="text-xs text-neutral-500">
-                  {formatDuration(s.duration_min)}
-                </p>
-              </div>
-              <span className="font-semibold">{formatPrice(s.price_cents)}</span>
+            <li key={s.id}>
+              <Link
+                href={`/${salon.slug}/agendar?servico=${s.id}`}
+                className="flex items-center justify-between gap-3 p-3 hover:bg-neutral-50 dark:hover:bg-neutral-800"
+              >
+                <div>
+                  <p className="font-medium">{s.name}</p>
+                  <p className="text-xs text-neutral-500">
+                    {formatDuration(s.duration_min)}
+                    {s.description ? ` · ${s.description}` : ""}
+                  </p>
+                </div>
+                <span className="text-right">
+                  <span className="block font-semibold">{formatPrice(s.price_cents)}</span>
+                  <span className="text-xs text-violet-600">Agendar ›</span>
+                </span>
+              </Link>
             </li>
           ))}
         </ul>
@@ -89,15 +106,12 @@ export default async function SalonPage({
       {salon.whatsapp && (
         <a
           href={whatsappLink(salon.whatsapp, `Olá, ${salon.name}! Quero agendar um horário.`)}
-          className="rounded-xl bg-green-600 p-3 text-center font-semibold text-white"
+          className="rounded-xl border border-green-600 p-3 text-center font-semibold text-green-700 dark:text-green-400"
         >
           Falar no WhatsApp
         </a>
       )}
 
-      <p className="text-center text-xs text-neutral-500">
-        Agendamento online chega na próxima etapa.
-      </p>
     </main>
   );
 }
