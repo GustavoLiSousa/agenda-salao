@@ -74,5 +74,6 @@ npm run dev
 5. ✅ Agenda do salão (dia/semana/mês), atendido/falta/desmarcar, agendar pelo balcão, aviso de vaga liberada e "horários livres" para postar
 6. ✅ Clientes como leads (sumidos, frequência de retorno, aniversário), cartão fidelidade, WhatsApp com mensagem pronta e ajustes do salão
 7. ✅ Área do cliente: "Meus agendamentos" (entra com Google ou código por e-mail), remarcar/desmarcar e app instalável com a cara de cada salão
-8. Página do salão completa, avaliações, pacotes e pagamentos (Mercado Pago)
-9. Relatórios do mês
+8. ✅ Página do salão com abas (serviços, equipe, local), mapa, "Como chegar", horário de funcionamento e "Aberto agora"
+9. Avaliações, pacotes e pagamentos (Mercado Pago)
+10. Relatórios do mês
