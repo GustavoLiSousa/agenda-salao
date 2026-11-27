@@ -61,3 +61,27 @@ export function formatLongDate(iso: string | Date, timeZone: string) {
     month: "long",
   }).format(new Date(iso));
 }
+
+/** Soma dias a uma data AAAA-MM-DD (sem fuso). */
+export function addDays(day: string, n: number) {
+  const d = new Date(`${day}T12:00:00Z`);
+  d.setUTCDate(d.getUTCDate() + n);
+  return d.toISOString().slice(0, 10);
+}
+
+/** Dia da semana (0 = domingo) de uma data AAAA-MM-DD. */
+export function weekdayOf(day: string) {
+  return new Date(`${day}T12:00:00Z`).getUTCDay();
+}
+
+/** Rótulo curto: "sex 28/11". */
+export function shortDay(day: string) {
+  const d = new Date(`${day}T12:00:00Z`);
+  const wd = new Intl.DateTimeFormat("pt-BR", { weekday: "short", timeZone: "UTC" }).format(d).replace(".", "");
+  const dm = new Intl.DateTimeFormat("pt-BR", { day: "2-digit", month: "2-digit", timeZone: "UTC" }).format(d);
+  return `${wd} ${dm}`;
+}
+
+export function isValidDay(day: string | undefined): day is string {
+  return !!day && /^\d{4}-\d{2}-\d{2}$/.test(day) && !Number.isNaN(Date.parse(`${day}T12:00:00Z`));
+}

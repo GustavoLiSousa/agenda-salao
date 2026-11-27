@@ -30,6 +30,7 @@ export default async function PainelPage() {
     { count: servicesCount },
     { count: professionalsCount },
     { count: clientsCount },
+    { count: freedCount },
   ] = await Promise.all([
     supabase
       .from("appointments")
@@ -41,6 +42,13 @@ export default async function PainelPage() {
     supabase.from("services").select("id", { count: "exact", head: true }).eq("salon_id", salon.id),
     supabase.from("professionals").select("id", { count: "exact", head: true }).eq("salon_id", salon.id),
     supabase.from("clients").select("id", { count: "exact", head: true }).eq("salon_id", salon.id),
+    supabase
+      .from("appointments")
+      .select("id", { count: "exact", head: true })
+      .eq("salon_id", salon.id)
+      .eq("status", "cancelled")
+      .gt("starts_at", new Date().toISOString())
+      .gt("cancelled_at", new Date(Date.now() - 72 * 3_600_000).toISOString()),
   ]);
 
   const firstName = (user.user_metadata?.full_name as string | undefined)?.split(" ")[0];
@@ -76,6 +84,22 @@ export default async function PainelPage() {
           </div>
         ))}
       </div>
+
+      {(freedCount ?? 0) > 0 && (
+        <Link
+          href="/painel/agenda"
+          className="rounded-xl border border-amber-300 bg-amber-50 p-3 text-sm dark:border-amber-900 dark:bg-amber-950"
+        >
+          <b>{freedCount} horário(s) liberado(s)</b> por clientes que desmarcaram. Toque para divulgar a vaga ›
+        </Link>
+      )}
+
+      <Link
+        href="/painel/agenda"
+        className="rounded-xl bg-violet-600 p-3 text-center font-semibold text-white"
+      >
+        Ver agenda de hoje
+      </Link>
 
       <ShareLink slug={salon.slug} salonName={salon.name} />
 
