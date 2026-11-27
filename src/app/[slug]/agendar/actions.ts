@@ -2,6 +2,7 @@
 
 import { redirect } from "next/navigation";
 import { createClient } from "@/lib/supabase/server";
+import { claimTokens, rememberBookingToken } from "@/lib/client-area";
 
 export type BookState = { error?: string };
 
@@ -24,6 +25,7 @@ export async function bookAction(_: BookState, formData: FormData): Promise<Book
       p_new_start: startsAt,
     });
     if (error) return { error: cleanError(error.message) };
+    await rememberBookingToken(String(data));
     redirect(`/${slug}/agendamento/${data}?remarcado=1`);
   }
 
@@ -35,5 +37,11 @@ export async function bookAction(_: BookState, formData: FormData): Promise<Book
     p_phone: String(formData.get("phone") ?? ""),
   });
   if (error) return { error: cleanError(error.message) };
+  await rememberBookingToken(String(data));
+  // cliente com a conta aberta: o horário já aparece em "Meus agendamentos"
+  const {
+    data: { user },
+  } = await supabase.auth.getUser();
+  if (user) await claimTokens(supabase, [String(data)]);
   redirect(`/${slug}/agendamento/${data}?novo=1`);
 }

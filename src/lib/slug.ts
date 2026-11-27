@@ -7,6 +7,7 @@ export const RESERVED_SLUGS = [
   "api",
   "admin",
   "app",
+  "minha-conta",
   "manifest.webmanifest",
 ];
 
