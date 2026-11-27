@@ -5,6 +5,7 @@ import { formatDuration, formatPrice, whatsappLink } from "@/lib/format";
 import type { Professional, Salon, Service } from "@/lib/types";
 import { InstallApp } from "@/components/install-app";
 import { SectionNav } from "@/components/section-nav";
+import { Stars, formatRating } from "@/components/stars";
 import { openStatus, openingHours, WEEKDAYS, type WorkingHourRow } from "@/lib/opening-hours";
 
 export const dynamic = "force-dynamic";
@@ -41,6 +42,25 @@ export default async function SalonPage({ params }: { params: Promise<{ slug: st
   const { data: workRows } = proIds.length
     ? await supabase.from("working_hours").select("weekday, start_time, end_time").in("professional_id", proIds).returns<WorkingHourRow[]>()
     : { data: [] as WorkingHourRow[] };
+  type ReviewRow = {
+    id: string;
+    salon_rating: number;
+    professional_rating: number;
+    comment: string | null;
+    reply: string | null;
+    created_at: string;
+    client_first_name: string | null;
+    professional_name: string;
+  };
+  const [{ data: reviewsData }, { data: summaryData }] = await Promise.all([
+    supabase.rpc("salon_reviews", { p_salon: salon.id, p_limit: 20 }).returns<ReviewRow>(),
+    supabase.rpc("salon_rating_summary", { p_salon: salon.id }).returns<{ professional_id: string | null; average: number; total: number }>(),
+  ]);
+  const reviews = (reviewsData ?? []) as unknown as ReviewRow[];
+  const summary = (summaryData ?? []) as unknown as { professional_id: string | null; average: number; total: number }[];
+  const salonScore = summary.find((r) => r.professional_id === null && r.total > 0);
+  const proScore = new Map(summary.filter((r) => r.professional_id).map((r) => [r.professional_id!, r]));
+
   const hours = openingHours(workRows ?? []);
   const hasHours = hours.some((d) => d.length > 0);
   const status = hasHours ? openStatus(hours, salon.timezone) : null;
@@ -49,6 +69,7 @@ export default async function SalonPage({ params }: { params: Promise<{ slug: st
   const sections = [
     { id: "servicos", label: "Serviços" },
     ...((professionals ?? []).length > 0 ? [{ id: "equipe", label: "Equipe" }] : []),
+    ...(reviews.length > 0 ? [{ id: "avaliacoes", label: "Avaliações" }] : []),
     ...(salon.address || hasHours || salon.whatsapp ? [{ id: "local", label: "Local e horário" }] : []),
   ];
 
@@ -95,6 +116,11 @@ export default async function SalonPage({ params }: { params: Promise<{ slug: st
             {salon.address && (
               <a href={`https://maps.google.com/?q=${encodeURIComponent(salon.address)}`} target="_blank" rel="noreferrer" className="hover:text-stone-900 dark:hover:text-stone-100">
                 {salon.address}
+              </a>
+            )}
+            {salonScore && (
+              <a href="#avaliacoes" className="flex items-center gap-1.5 font-medium text-stone-700 dark:text-stone-300">
+                <Stars value={Number(salonScore.average)} /> {formatRating(Number(salonScore.average))} ({salonScore.total})
               </a>
             )}
             {status && (
@@ -182,8 +208,53 @@ export default async function SalonPage({ params }: { params: Promise<{ slug: st
                       )}
                     </div>
                     <p className="mt-2 truncate text-sm font-medium">{p.name}</p>
+                    {proScore.get(p.id) && (
+                      <p className="text-xs text-amber-600">★ {formatRating(Number(proScore.get(p.id)!.average))} ({proScore.get(p.id)!.total})</p>
+                    )}
                     {p.bio && <p className="line-clamp-2 text-xs text-stone-500">{p.bio}</p>}
                   </Link>
+                </li>
+              ))}
+            </ul>
+          </section>
+        )}
+
+        {/* Avaliações */}
+        {reviews.length > 0 && (
+          <section id="avaliacoes" className="scroll-mt-16">
+            <h2 className="mb-4 flex items-center gap-3 text-xs font-semibold uppercase tracking-[0.2em] text-brand-700 dark:text-brand-300">
+              Avaliações
+              <span className="h-px flex-1 bg-stone-200 dark:bg-stone-800" />
+            </h2>
+            {salonScore && (
+              <div className="mb-4 flex items-center gap-3">
+                <span className="font-display text-4xl font-semibold">{formatRating(Number(salonScore.average))}</span>
+                <span className="flex flex-col">
+                  <Stars value={Number(salonScore.average)} size={18} />
+                  <span className="text-sm text-stone-500">
+                    {salonScore.total} avaliaç{salonScore.total === 1 ? "ão" : "ões"} de clientes atendidos
+                  </span>
+                </span>
+              </div>
+            )}
+            <ul className="flex flex-col gap-3">
+              {reviews.map((r) => (
+                <li key={r.id} className="rounded-2xl border border-stone-200/80 bg-white p-4 dark:border-stone-800 dark:bg-stone-900">
+                  <div className="flex items-center justify-between gap-3">
+                    <span className="font-medium">{r.client_first_name ?? "Cliente"}</span>
+                    <span className="text-xs text-stone-500">
+                      {new Intl.DateTimeFormat("pt-BR", { timeZone: salon.timezone, day: "numeric", month: "short", year: "numeric" }).format(new Date(r.created_at))}
+                    </span>
+                  </div>
+                  <p className="mt-1 flex flex-wrap items-center gap-x-2 text-xs text-stone-500">
+                    <Stars value={r.salon_rating} /> com {r.professional_name}
+                  </p>
+                  {r.comment && <p className="mt-2 text-sm">{r.comment}</p>}
+                  {r.reply && (
+                    <p className="mt-2 rounded-xl bg-stone-50 p-3 text-sm text-stone-600 dark:bg-stone-800 dark:text-stone-300">
+                      <b>Resposta do salão:</b> {r.reply}
+                    </p>
+                  )}
                 </li>
               ))}
             </ul>
