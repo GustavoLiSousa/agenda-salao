@@ -8,6 +8,7 @@ const playfair = Playfair_Display({ variable: "--font-playfair", subsets: ["lati
 export const metadata: Metadata = {
   title: "Agenda Salão",
   description: "Agendamento online para salões, barbearias, manicures e sobrancelhas.",
+  manifest: "/manifest.webmanifest",
 };
 
 export const viewport: Viewport = {
