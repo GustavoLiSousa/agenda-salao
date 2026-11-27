@@ -21,7 +21,7 @@ export function SalonCard({ s, saved, back = "/minha-conta" }: { s: SalonSummary
   return (
     <Card className="flex flex-col gap-3">
       <div className="flex items-start gap-2">
-        <Link href={`/minha-conta/salao/${s.slug}`} className="flex min-w-0 flex-1 items-center gap-3">
+        <Link href={`/${s.slug}`} className="flex min-w-0 flex-1 items-center gap-3">
           {s.logo_url ? (
             // eslint-disable-next-line @next/next/no-img-element
             <img src={s.logo_url} alt="" className="h-12 w-12 shrink-0 rounded-xl object-cover" />
@@ -39,13 +39,13 @@ export function SalonCard({ s, saved, back = "/minha-conta" }: { s: SalonSummary
               </p>
             )}
             {s.address && <p className="truncate text-xs text-stone-500">{s.address}</p>}
-            <p className="text-xs font-medium text-brand-700 dark:text-brand-300">Avaliações, pacotes e equipe ›</p>
+            <p className="text-xs font-medium text-brand-700 dark:text-brand-300">Serviços, avaliações e horários ›</p>
           </div>
         </Link>
         <FavoriteButton salonId={s.id} saved={saved} back={back} />
       </div>
       <Link
-        href={`/minha-conta/salao/${s.slug}`}
+        href={`/${s.slug}`}
         className="rounded-xl bg-stone-900 px-4 py-3 text-center text-sm font-semibold text-white transition hover:bg-stone-800 dark:bg-stone-100 dark:text-stone-900"
       >
         Abrir salão
