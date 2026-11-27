@@ -1,3 +1,4 @@
+import Link from "next/link";
 import { ShareLink } from "@/components/share-link";
 import { requireSalon } from "@/lib/session";
 
@@ -96,7 +97,8 @@ export default async function PainelPage() {
             ))}
           </ul>
           <p className="mt-3 text-xs text-neutral-500">
-            As telas de serviços, profissionais e horários chegam na próxima etapa.
+            Ajuste em <Link className="text-violet-600" href="/painel/servicos">Serviços</Link> e{" "}
+            <Link className="text-violet-600" href="/painel/profissionais">Profissionais</Link>.
           </p>
         </section>
       )}
