@@ -3,6 +3,7 @@ import { Notice } from "@/components/ui";
 import { createClient, isSupabaseConfigured } from "@/lib/supabase/server";
 import { AuthForm } from "./auth-form";
 
+export const dynamic = "force-dynamic";
 export const metadata = { title: "Entrar | Agenda Salão" };
 
 export default async function EntrarPage({
