@@ -5,6 +5,7 @@ export const dynamic = "force-dynamic";
 
 const NAV = [
   { href: "/painel", label: "Início" },
+  { href: "/painel/agenda", label: "Agenda" },
   { href: "/painel/servicos", label: "Serviços" },
   { href: "/painel/profissionais", label: "Profissionais" },
 ];
