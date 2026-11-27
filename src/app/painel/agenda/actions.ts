@@ -42,6 +42,8 @@ export async function bookByStaff(_: StaffBookState, formData: FormData): Promis
   const day = String(formData.get("day") ?? "");
   const time = String(formData.get("time") ?? "");
   if (!day || !time) return { error: "Escolha o dia e o horário." };
+  if (!String(formData.get("phone") ?? "").trim())
+    return { error: "Escolha um cliente da lista ou cadastre um novo." };
   const startsAt = zonedToDate(day, time, membership.salon.timezone).toISOString();
 
   const { error } = await supabase.rpc("book_by_staff", {

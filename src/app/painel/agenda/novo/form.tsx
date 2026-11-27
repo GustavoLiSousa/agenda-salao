@@ -5,6 +5,7 @@ import { Button, Field, Notice, Select } from "@/components/ui";
 import { createClient } from "@/lib/supabase/client";
 import { formatTime } from "@/lib/time";
 import { bookByStaff, type StaffBookState } from "../actions";
+import { ClientPicker, type PickerClient } from "./client-picker";
 
 type Props = {
   tz: string;
@@ -16,9 +17,10 @@ type Props = {
   initialTime?: string;
   initialName?: string;
   initialPhone?: string;
+  clients: PickerClient[];
 };
 
-export function StaffBookingForm({ tz, day: initialDay, professionals, services, links, initialProfessional, initialTime, initialName, initialPhone }: Props) {
+export function StaffBookingForm({ tz, day: initialDay, professionals, services, links, initialProfessional, initialTime, initialName, initialPhone, clients }: Props) {
   const [state, action, pending] = useActionState<StaffBookState, FormData>(bookByStaff, {});
   const [pro, setPro] = useState(initialProfessional || professionals[0]?.id || "");
   const servicesForPro = services.filter((s) => links.some((l) => l.professional_id === pro && l.service_id === s.id));
@@ -86,10 +88,7 @@ export function StaffBookingForm({ tz, day: initialDay, professionals, services,
           </div>
         )}
       </div>
-      <div className="grid gap-3 sm:grid-cols-2">
-        <Field label="Nome do cliente" name="name" defaultValue={initialName} required />
-        <Field label="WhatsApp do cliente" name="phone" type="tel" inputMode="tel" placeholder="11 99999-9999" defaultValue={initialPhone?.replace(/^55/, "")} required />
-      </div>
+      <ClientPicker clients={clients} initialName={initialName} initialPhone={initialPhone} />
       <Field label="Observação (opcional)" name="notes" />
       {state.error && <Notice kind="error">{state.error}</Notice>}
       <Button disabled={pending || !service}>{pending ? "Salvando..." : "Agendar"}</Button>
