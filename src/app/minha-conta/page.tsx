@@ -5,7 +5,19 @@ import { claimTokens, readBookingTokens, type MyAppointment } from "@/lib/client
 import { formatPrice, whatsappLink } from "@/lib/format";
 import { createClient, isSupabaseConfigured } from "@/lib/supabase/server";
 import { formatLongDate, formatTime } from "@/lib/time";
+import { isExpired } from "@/lib/packages";
 import { clientSignOut } from "./actions";
+
+type MyPackage = {
+  id: string;
+  name: string;
+  status: string;
+  purchased_at: string;
+  expires_at: string | null;
+  salon_name: string;
+  salon_slug: string;
+  items: { service: string; quantity: number; used: number }[];
+};
 
 export const dynamic = "force-dynamic";
 export const metadata = { title: "Meus agendamentos", robots: { index: false } };
@@ -37,12 +49,14 @@ export default async function MinhaContaPage({
   // (e o do link aberto, quando veio da página de um agendamento)
   await claimTokens(supabase, [...(await readBookingTokens()), ...(vincular ? [vincular] : [])]);
 
-  const [{ data }, { data: salon }] = await Promise.all([
+  const [{ data }, { data: salon }, { data: pkgData }] = await Promise.all([
     supabase.rpc("my_appointments_v2").returns<MyAppointment>(),
     slug
       ? supabase.from("salons").select("name, slug, logo_url").eq("slug", slug).maybeSingle<{ name: string; slug: string; logo_url: string | null }>()
       : Promise.resolve({ data: null }),
+    supabase.rpc("my_packages").returns<MyPackage>(),
   ]);
+  const packages = ((pkgData ?? []) as unknown as MyPackage[]).filter((p) => !slug || p.salon_slug === slug);
   const all = (data ?? []) as unknown as MyAppointment[];
   const now = Date.now();
   const upcoming = all
@@ -96,6 +110,48 @@ export default async function MinhaContaPage({
           </Link>
         )}
       </section>
+
+      {packages.length > 0 && (
+        <section className="flex flex-col gap-3">
+          <h2 className="text-xs font-semibold uppercase tracking-[0.2em] text-brand-700 dark:text-brand-300">Meus pacotes</h2>
+          {packages.map((p) => {
+            const expired = isExpired(p);
+            const left = p.items.reduce((n, i) => n + i.quantity - i.used, 0);
+            const off = p.status !== "active" || expired || left === 0;
+            return (
+              <Card key={p.id} className={`flex flex-col gap-3 ${off ? "opacity-60" : ""}`}>
+                <div className="flex items-start justify-between gap-3">
+                  <div className="min-w-0">
+                    <p className="font-semibold">{p.name}</p>
+                    <p className="text-xs text-stone-500">
+                      {p.salon_name}
+                      {p.expires_at ? ` · ${expired ? "venceu" : "use até"} ${formatLongDate(p.expires_at, "America/Sao_Paulo")}` : ""}
+                    </p>
+                  </div>
+                  <span className="shrink-0 rounded-full bg-brand-100 px-2.5 py-1 text-xs font-semibold text-brand-800 dark:bg-brand-950 dark:text-brand-200">
+                    {p.status !== "active" ? "Cancelado" : expired ? "Vencido" : `${left} restante(s)`}
+                  </span>
+                </div>
+                <ul className="flex flex-col gap-1.5 text-sm">
+                  {p.items.map((i) => (
+                    <li key={i.service} className="flex items-center justify-between gap-3">
+                      <span className="truncate">{i.service}</span>
+                      <span className="text-stone-500">
+                        {i.quantity - i.used} de {i.quantity}
+                      </span>
+                    </li>
+                  ))}
+                </ul>
+                {!off && (
+                  <Link href={`/${p.salon_slug}/agendar`} className="text-sm font-semibold text-brand-700 underline-offset-4 hover:underline dark:text-brand-300">
+                    Agendar uma sessão ›
+                  </Link>
+                )}
+              </Card>
+            );
+          })}
+        </section>
+      )}
 
       {past.length > 0 && (
         <section className="flex flex-col gap-3">

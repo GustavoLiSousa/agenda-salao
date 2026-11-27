@@ -6,6 +6,7 @@ import type { Professional, Salon, Service } from "@/lib/types";
 import { InstallApp } from "@/components/install-app";
 import { SectionNav } from "@/components/section-nav";
 import { Stars, formatRating } from "@/components/stars";
+import { fullPrice, itemsLabel, validityLabel, type SalonPackage } from "@/lib/packages";
 import { openStatus, openingHours, WEEKDAYS, type WorkingHourRow } from "@/lib/opening-hours";
 
 export const dynamic = "force-dynamic";
@@ -38,6 +39,17 @@ export default async function SalonPage({ params }: { params: Promise<{ slug: st
     supabase.from("professionals").select("*").eq("salon_id", salon.id).eq("active", true).order("sort_order").order("name").returns<Professional[]>(),
   ]);
 
+  const { data: pkgData } = await supabase
+    .from("packages")
+    .select("*, items:package_items(service_id, quantity, service:services(name, price_cents, active))")
+    .eq("salon_id", salon.id)
+    .eq("active", true)
+    .order("sort_order")
+    .order("created_at")
+    .returns<SalonPackage[]>();
+  // só mostra pacotes cujos serviços continuam ativos
+  const packages = (pkgData ?? []).filter((p) => p.items.length > 0 && p.items.every((i) => i.service?.active));
+
   const proIds = (professionals ?? []).map((p) => p.id);
   const { data: workRows } = proIds.length
     ? await supabase.from("working_hours").select("weekday, start_time, end_time").in("professional_id", proIds).returns<WorkingHourRow[]>()
@@ -68,6 +80,7 @@ export default async function SalonPage({ params }: { params: Promise<{ slug: st
 
   const sections = [
     { id: "servicos", label: "Serviços" },
+    ...(packages.length > 0 ? [{ id: "pacotes", label: "Pacotes" }] : []),
     ...((professionals ?? []).length > 0 ? [{ id: "equipe", label: "Equipe" }] : []),
     ...(reviews.length > 0 ? [{ id: "avaliacoes", label: "Avaliações" }] : []),
     ...(salon.address || hasHours || salon.whatsapp ? [{ id: "local", label: "Local e horário" }] : []),
@@ -187,6 +200,54 @@ export default async function SalonPage({ params }: { params: Promise<{ slug: st
         ))}
 
         </div>
+
+        {/* Pacotes */}
+        {packages.length > 0 && (
+          <section id="pacotes" className="scroll-mt-16">
+            <h2 className="mb-4 flex items-center gap-3 text-xs font-semibold uppercase tracking-[0.2em] text-brand-700 dark:text-brand-300">
+              Pacotes
+              <span className="h-px flex-1 bg-stone-200 dark:bg-stone-800" />
+            </h2>
+            <ul className="flex flex-col gap-3">
+              {packages.map((p) => {
+                const full = fullPrice(p.items);
+                const save = full - p.price_cents;
+                const pct = full > 0 ? Math.round((save / full) * 100) : 0;
+                return (
+                  <li
+                    key={p.id}
+                    className="relative overflow-hidden rounded-2xl border border-brand-200 bg-gradient-to-br from-white to-brand-50 p-4 dark:border-brand-900 dark:from-stone-900 dark:to-stone-900"
+                  >
+                    {pct >= 5 && (
+                      <span className="absolute right-3 top-3 rounded-full bg-brand-700 px-2.5 py-1 text-xs font-semibold text-white">
+                        -{pct}%
+                      </span>
+                    )}
+                    <p className="pr-16 font-display text-lg font-semibold leading-snug">{p.name}</p>
+                    <p className="mt-1 text-sm text-stone-600 dark:text-stone-400">{itemsLabel(p.items)}</p>
+                    {p.description && <p className="mt-1 text-sm text-stone-500">{p.description}</p>}
+                    <div className="mt-3 flex flex-wrap items-end justify-between gap-3">
+                      <div>
+                        {save > 0 && <p className="text-xs text-stone-400 line-through">{formatPrice(full)}</p>}
+                        <p className="font-display text-2xl font-semibold">{formatPrice(p.price_cents)}</p>
+                        <p className="text-xs text-stone-500">{validityLabel(p.validity_days)}</p>
+                      </div>
+                      <a
+                        href={whatsappLink(salon.whatsapp, `Olá, ${salon.name}! Tenho interesse no pacote "${p.name}" (${formatPrice(p.price_cents)}).`)}
+                        target="_blank"
+                        rel="noreferrer"
+                        className="rounded-xl bg-[#1f9d55] px-4 py-2.5 text-sm font-semibold text-white transition hover:bg-[#188247]"
+                      >
+                        Quero este pacote
+                      </a>
+                    </div>
+                  </li>
+                );
+              })}
+            </ul>
+            <p className="mt-3 text-xs text-stone-500">O pagamento é combinado direto com o salão. Depois é só agendar normalmente.</p>
+          </section>
+        )}
 
         {/* Equipe */}
         {(professionals ?? []).length > 0 && (
