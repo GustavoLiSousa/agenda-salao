@@ -1,6 +1,7 @@
 import { NextResponse, type NextRequest } from "next/server";
 import type { EmailOtpType } from "@supabase/supabase-js";
 import { createClient } from "@/lib/supabase/server";
+import { afterCodeLogin } from "@/app/minha-conta/entrar/actions";
 
 // Para onde o link do e-mail de confirmação leva.
 export async function GET(request: NextRequest) {
@@ -24,7 +25,7 @@ export async function GET(request: NextRequest) {
 
   if (code) {
     const { error } = await supabase.auth.exchangeCodeForSession(code);
-    if (!error) return NextResponse.redirect(`${origin}${next}`);
+    if (!error) return NextResponse.redirect(`${origin}${await landing(next)}`);
     if (next.startsWith("/minha-conta")) return NextResponse.redirect(failure);
     // O Supabase só manda `code` depois de confirmar o e-mail. Se a troca falhou
     // (ex.: link aberto em outro navegador/app, sem o cookie do cadastro),
@@ -32,8 +33,13 @@ export async function GET(request: NextRequest) {
     return NextResponse.redirect(`${origin}/entrar?confirmado=1`);
   } else if (tokenHash && type) {
     const { error } = await supabase.auth.verifyOtp({ token_hash: tokenHash, type });
-    if (!error) return NextResponse.redirect(`${origin}${next}`);
+    if (!error) return NextResponse.redirect(`${origin}${await landing(next)}`);
   }
 
   return NextResponse.redirect(failure);
+}
+
+// Cliente que entrou pelo link do e-mail e ainda não tem senha vai criar uma.
+async function landing(next: string) {
+  return next.startsWith("/minha-conta") ? afterCodeLogin(next) : next;
 }
