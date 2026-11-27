@@ -36,12 +36,15 @@ O cliente agenda por um link (aberto no navegador do celular, sem precisar de lo
 ## Configurar (passo a passo)
 
 1. Crie uma conta grátis em [supabase.com](https://supabase.com) e um projeto novo (região São Paulo).
-2. No projeto, abra **SQL Editor**, cole o conteúdo de `supabase/migrations/20261127000000_modelo_inicial.sql` e clique **Run**.
+2. No projeto, abra **SQL Editor** e rode, **em ordem**, cada arquivo da pasta `supabase/migrations/` (cole o conteúdo e clique **Run**).
 3. (Opcional) Faça o mesmo com `supabase/seed.sql` para ter dados de exemplo.
-4. Em **Project Settings > API**, copie a *Project URL* e a chave *anon public*.
+4. Em **Project Settings > API Keys**, copie a *Project URL* (só `https://xxxx.supabase.co`) e a chave *anon / publishable*.
 5. Crie uma conta em [vercel.com](https://vercel.com) entrando com o GitHub, importe este repositório e, em **Environment Variables**, preencha
    `NEXT_PUBLIC_SUPABASE_URL` e `NEXT_PUBLIC_SUPABASE_ANON_KEY` com os valores do passo 4.
 6. Abra `https://seu-projeto.vercel.app/barbearia-do-ze` para ver o salão de exemplo.
+7. No Supabase, em **Authentication > URL Configuration**, coloque o endereço da Vercel em **Site URL**
+   e adicione `https://seu-projeto.vercel.app/**` em **Redirect URLs** (é para onde o e-mail de confirmação leva).
+8. Abra `https://seu-projeto.vercel.app/entrar`, crie sua conta e cadastre o seu salão.
 
 ## Rodar no computador (para desenvolvedores)
 
@@ -54,9 +57,9 @@ npm run dev
 ## Etapas
 
 1. ✅ Base do app e modelo de dados
-2. Login (dono/profissional por e-mail, cliente por telefone) e cadastro do salão
+2. ✅ Login do dono/profissional (e-mail e senha), cadastro do salão e painel inicial
 3. ✅ Gestão: serviços, profissionais, horários, folgas e abertura da agenda
-4. Agendamento do cliente: serviço → profissional → data → horário livre, confirmação, Google Agenda e lembrete (.ics)
+4. ✅ Agendamento do cliente com nome e telefone: serviço → profissional → data → horário livre, confirmação, Google Agenda, lembrete (.ics) e link pessoal para remarcar/desmarcar
 5. Agenda do salão (dia/semana/mês), desmarcar/remarcar, aviso de vaga liberada e "horários livres" para postar
 6. Clientes como leads (sumidos há 30+ dias, frequência 7/15/30), botões de WhatsApp com mensagem pronta
 7. Relatórios do mês
