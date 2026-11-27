@@ -109,20 +109,20 @@ export default async function LivresPage({
   };
 
   return (
-    <main className="flex flex-col gap-4">
-      <Link href="/painel/agenda" className="text-sm text-violet-600">‹ Agenda</Link>
-      <h1 className="text-2xl font-bold">Horários livres</h1>
-      <p className="text-sm text-neutral-500">
+    <main className="mx-auto flex w-full max-w-3xl flex-col gap-5">
+      <Link href="/painel/agenda" className="text-sm text-brand-700 dark:text-brand-300">‹ Agenda</Link>
+      <h1 className="font-display text-3xl font-semibold">Horários livres</h1>
+      <p className="text-sm text-stone-500">
         Copie o texto e poste no status do WhatsApp, no Instagram ou mande para os clientes.
       </p>
 
       <div className="flex flex-wrap items-center gap-2 text-sm">
-        <Link href={qs({ data: addDays(day, -1) })} className="rounded-lg border border-neutral-300 px-3 py-1 dark:border-neutral-700">‹</Link>
+        <Link href={qs({ data: addDays(day, -1) })} className="rounded-lg border border-stone-300 px-3 py-1 dark:border-stone-700">‹</Link>
         <span className="font-semibold first-letter:uppercase">
           {days === 1 ? shortDay(day) : `${shortDay(day)} a ${shortDay(last)}`}
         </span>
-        <Link href={qs({ data: addDays(day, 1) })} className="rounded-lg border border-neutral-300 px-3 py-1 dark:border-neutral-700">›</Link>
-        <Link href={qs({ dias: days === 1 ? "7" : "1" })} className="ml-auto rounded-lg border border-neutral-300 px-3 py-1 dark:border-neutral-700">
+        <Link href={qs({ data: addDays(day, 1) })} className="rounded-lg border border-stone-300 px-3 py-1 dark:border-stone-700">›</Link>
+        <Link href={qs({ dias: days === 1 ? "7" : "1" })} className="ml-auto rounded-lg border border-stone-300 px-3 py-1 dark:border-stone-700">
           {days === 1 ? "Ver 7 dias" : "Ver 1 dia"}
         </Link>
       </div>
@@ -131,7 +131,7 @@ export default async function LivresPage({
         {hasAny ? (
           <pre className="whitespace-pre-wrap font-sans text-sm">{text}</pre>
         ) : (
-          <p className="text-sm text-neutral-500">Nenhum horário livre nesse período.</p>
+          <p className="text-sm text-stone-500">Nenhum horário livre nesse período.</p>
         )}
       </Card>
 

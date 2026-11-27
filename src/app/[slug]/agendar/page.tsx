@@ -56,11 +56,13 @@ export default async function AgendarPage({
   }
 
   return (
-    <main className="mx-auto flex min-h-screen max-w-md flex-col gap-4 p-4">
-      <Link href={`/${salon.slug}`} className="text-sm text-violet-600">
-        ‹ {salon.name}
-      </Link>
-      <h1 className="text-2xl font-bold">{reschedule ? "Remarcar horário" : "Agendar horário"}</h1>
+    <main className="mx-auto flex min-h-screen max-w-md flex-col gap-6 px-5 py-6">
+      <div>
+        <Link href={`/${salon.slug}`} className="text-sm text-stone-500 hover:text-stone-900 dark:hover:text-stone-100">
+          ‹ {salon.name}
+        </Link>
+        <h1 className="mt-1 font-display text-3xl font-semibold">{reschedule ? "Remarcar horário" : "Agendar horário"}</h1>
+      </div>
       <BookingFlow
         salon={{ id: salon.id, slug: salon.slug, name: salon.name, timezone: salon.timezone }}
         services={services ?? []}

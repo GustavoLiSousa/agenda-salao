@@ -1,4 +1,5 @@
 import Link from "next/link";
+import { ImageInput } from "@/components/image-input";
 import { notFound } from "next/navigation";
 import { Button, Card, Field, GhostButton, Notice, Select } from "@/components/ui";
 import { formatPrice } from "@/lib/format";
@@ -20,7 +21,7 @@ const OK: Record<string, string> = {
 };
 
 const hhmm = (t: string) => t.slice(0, 5);
-const timeInput = "rounded-md border border-neutral-300 bg-white px-2 py-1 text-sm dark:border-neutral-700 dark:bg-neutral-900";
+const timeInput = "rounded-md border border-stone-300 bg-white px-2 py-1 text-sm dark:border-stone-700 dark:bg-stone-900";
 
 export default async function ProfissionalPage({
   params,
@@ -57,11 +58,11 @@ export default async function ProfissionalPage({
   const doing = new Set((links ?? []).map((l) => l.service_id as string));
 
   return (
-    <main className="flex flex-col gap-4">
-      <Link href="/painel/profissionais" className="text-sm text-violet-600">
+    <main className="mx-auto flex w-full max-w-3xl flex-col gap-5">
+      <Link href="/painel/profissionais" className="text-sm text-brand-700 dark:text-brand-300">
         ‹ Profissionais
       </Link>
-      <h1 className="text-2xl font-bold">{pro.name}</h1>
+      <h1 className="font-display text-3xl font-semibold">{pro.name}</h1>
       {novo && <Notice>Profissional criado! Confira os serviços e horários abaixo.</Notice>}
       {erro && <Notice kind="error">{erro}</Notice>}
       {ok && OK[ok] && <Notice>{OK[ok]}</Notice>}
@@ -70,7 +71,10 @@ export default async function ProfissionalPage({
       <Card>
         <form action={saveProfessional} className="flex flex-col gap-4">
           <input type="hidden" name="id" value={pro.id} />
-          <h2 className="font-semibold">Dados</h2>
+          <h2 className="font-display text-lg font-semibold">Dados</h2>
+          <div className="w-32">
+            <ImageInput name="photo" label="Foto" current={pro.photo_url} aspect="aspect-square" removeName="remove_photo" />
+          </div>
           <div className="grid gap-3 sm:grid-cols-2">
             <Field label="Nome" name="name" defaultValue={pro.name} required />
             <Field label="Telefone" name="phone" type="tel" defaultValue={pro.phone ?? ""} />
@@ -82,23 +86,23 @@ export default async function ProfissionalPage({
             <input type="checkbox" name="active" defaultChecked={pro.active} /> Ativo (aparece no link do salão)
           </label>
 
-          <h2 className="font-semibold">Serviços que faz</h2>
+          <h2 className="font-display text-lg font-semibold">Serviços que faz</h2>
           {services?.length ? (
             <div className="grid gap-2 sm:grid-cols-2">
               {services.map((s) => (
                 <label key={s.id} className="flex items-center gap-2 text-sm">
                   <input type="checkbox" name="services" value={s.id} defaultChecked={doing.has(s.id)} />
-                  {s.name} <span className="text-neutral-500">({formatPrice(s.price_cents)})</span>
+                  {s.name} <span className="text-stone-500">({formatPrice(s.price_cents)})</span>
                 </label>
               ))}
             </div>
           ) : (
-            <p className="text-sm text-neutral-500">
-              Cadastre serviços primeiro em <Link className="text-violet-600" href="/painel/servicos">Serviços</Link>.
+            <p className="text-sm text-stone-500">
+              Cadastre serviços primeiro em <Link className="text-brand-700 dark:text-brand-300" href="/painel/servicos">Serviços</Link>.
             </p>
           )}
 
-          <h2 className="font-semibold">Abertura da agenda</h2>
+          <h2 className="font-display text-lg font-semibold">Abertura da agenda</h2>
           <div className="grid gap-3 sm:grid-cols-2">
             <Select label="Como a agenda abre" name="release_mode" defaultValue={pro.release_mode}>
               <option value="rolling">Sempre aberta (próximos dias)</option>
@@ -155,8 +159,8 @@ export default async function ProfissionalPage({
         <form action={saveWorkingHours} className="flex flex-col gap-3">
           <input type="hidden" name="id" value={pro.id} />
           <div>
-            <h2 className="font-semibold">Horário de trabalho</h2>
-            <p className="text-xs text-neutral-500">
+            <h2 className="font-display text-lg font-semibold">Horário de trabalho</h2>
+            <p className="text-xs text-stone-500">
               Use o segundo período para o intervalo de almoço. Dia desmarcado = folga fixa.
             </p>
           </div>
@@ -171,7 +175,7 @@ export default async function ProfissionalPage({
                 <input className={timeInput} type="time" name={`start1_${d}`} defaultValue={day[0] ? hhmm(day[0].start_time) : "09:00"} />
                 <span>às</span>
                 <input className={timeInput} type="time" name={`end1_${d}`} defaultValue={day[0] ? hhmm(day[0].end_time) : "12:00"} />
-                <span className="text-neutral-400">e</span>
+                <span className="text-stone-400">e</span>
                 <input className={timeInput} type="time" name={`start2_${d}`} defaultValue={day[1] ? hhmm(day[1].start_time) : day.length ? "" : "13:00"} />
                 <span>às</span>
                 <input className={timeInput} type="time" name={`end2_${d}`} defaultValue={day[1] ? hhmm(day[1].end_time) : day.length ? "" : "19:00"} />
@@ -185,8 +189,8 @@ export default async function ProfissionalPage({
       {/* Folgas e bloqueios */}
       <Card className="flex flex-col gap-3">
         <div>
-          <h2 className="font-semibold">Folgas e bloqueios</h2>
-          <p className="text-xs text-neutral-500">Férias, médico, feriado... Nesse período ninguém consegue agendar.</p>
+          <h2 className="font-display text-lg font-semibold">Folgas e bloqueios</h2>
+          <p className="text-xs text-stone-500">Férias, médico, feriado... Nesse período ninguém consegue agendar.</p>
         </div>
         {blocks?.length ? (
           <ul className="flex flex-col gap-2">
@@ -205,9 +209,9 @@ export default async function ProfissionalPage({
             ))}
           </ul>
         ) : (
-          <p className="text-sm text-neutral-500">Nenhum bloqueio programado.</p>
+          <p className="text-sm text-stone-500">Nenhum bloqueio programado.</p>
         )}
-        <form action={addTimeBlock} className="grid gap-3 border-t border-neutral-200 pt-3 sm:grid-cols-2 dark:border-neutral-800">
+        <form action={addTimeBlock} className="grid gap-3 border-t border-stone-200 pt-3 sm:grid-cols-2 dark:border-stone-800">
           <input type="hidden" name="id" value={pro.id} />
           <Field label="De (data)" name="start_day" type="date" required />
           <Field label="Até (data)" name="end_day" type="date" hint="Deixe vazio se for só um dia." />
@@ -226,7 +230,7 @@ export default async function ProfissionalPage({
       {membership.role === "owner" && (
         <Card className="flex flex-col gap-2 border-red-200 dark:border-red-900">
           <h2 className="font-semibold text-red-700 dark:text-red-400">Excluir profissional</h2>
-          <p className="text-xs text-neutral-500">
+          <p className="text-xs text-stone-500">
             Ele some do painel e do link do salão. Os atendimentos antigos continuam no histórico e nos relatórios.
           </p>
           <form action={deleteProfessional}>

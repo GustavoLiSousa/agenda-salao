@@ -4,6 +4,7 @@ import { revalidatePath } from "next/cache";
 import { redirect } from "next/navigation";
 import { parseIntOrNull, parsePriceToCents } from "@/lib/parse";
 import { requireSalon } from "@/lib/session";
+import { uploadImage } from "@/lib/upload";
 
 function fail(message: string): never {
   redirect(`/painel/servicos?erro=${encodeURIComponent(message)}`);
@@ -24,7 +25,16 @@ export async function saveService(formData: FormData) {
   if (return_every_days !== null && return_every_days < 1)
     fail("O retorno precisa ser um número de dias maior que zero.");
 
+  let image_url: string | null | undefined = undefined;
+  try {
+    image_url = await uploadImage(supabase, membership.salon.id, formData.get("image"), "servicos");
+  } catch (e) {
+    fail((e as Error).message);
+  }
+  if (!image_url) image_url = formData.get("remove_image") === "on" ? null : undefined;
+
   const row = {
+    ...(image_url !== undefined ? { image_url } : {}),
     salon_id: membership.salon.id,
     name,
     category: String(formData.get("category") ?? "").trim() || null,

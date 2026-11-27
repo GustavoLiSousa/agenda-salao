@@ -8,6 +8,7 @@ export type Salon = {
   address: string | null;
   instagram: string | null;
   logo_url: string | null;
+  cover_url?: string | null;
   timezone: string;
   cancel_min_hours: number;
   inactive_after_days: number;
@@ -40,6 +41,7 @@ export type Service = {
   duration_min: number;
   return_every_days: number | null;
   active: boolean;
+  image_url?: string | null;
 };
 
 export type AppointmentStatus =

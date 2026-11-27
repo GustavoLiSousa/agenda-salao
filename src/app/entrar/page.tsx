@@ -22,8 +22,11 @@ export default async function EntrarPage({
   return (
     <main className="mx-auto flex min-h-screen max-w-sm flex-col justify-center gap-6 p-6">
       <div>
-        <h1 className="text-2xl font-bold">Área do salão</h1>
-        <p className="text-sm text-neutral-500">
+        <span className="mb-6 flex h-12 w-12 items-center justify-center rounded-xl bg-stone-900 font-display text-xl font-semibold text-brand-300 dark:bg-stone-100 dark:text-brand-700">
+          A
+        </span>
+        <h1 className="font-display text-3xl font-semibold">Área do salão</h1>
+        <p className="text-sm text-stone-500">
           Para donos e profissionais. Clientes agendam pelo link do salão.
         </p>
       </div>

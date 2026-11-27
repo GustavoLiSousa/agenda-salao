@@ -30,18 +30,18 @@ const STORAGE_KEY = "agenda-salao:cliente";
 
 function StepTitle({ n, children }: { n: number; children: React.ReactNode }) {
   return (
-    <h2 className="flex items-center gap-2 font-semibold">
-      <span className="flex h-6 w-6 items-center justify-center rounded-full bg-violet-600 text-xs text-white">{n}</span>
+    <h2 className="flex items-center gap-3 font-display text-xl font-semibold">
+      <span className="flex h-7 w-7 items-center justify-center rounded-full border border-brand-400 font-sans text-xs font-semibold text-brand-700 dark:text-brand-300">{n}</span>
       {children}
     </h2>
   );
 }
 
 function chip(selected: boolean) {
-  return `rounded-xl border px-3 py-2 text-sm transition ${
+  return `rounded-xl border px-3.5 py-2.5 text-sm transition active:scale-[0.98] ${
     selected
-      ? "border-violet-600 bg-violet-600 text-white"
-      : "border-neutral-300 bg-white hover:border-violet-400 dark:border-neutral-700 dark:bg-neutral-900"
+      ? "border-stone-900 bg-stone-900 dark:border-stone-100 text-white dark:bg-stone-100 dark:text-stone-900"
+      : "border-stone-200 bg-white hover:border-stone-400 dark:border-stone-700 dark:bg-stone-900"
   }`;
 }
 
@@ -130,7 +130,7 @@ export function BookingFlow(props: Props) {
   };
 
   return (
-    <div className="flex flex-col gap-6">
+    <div className="flex flex-col gap-8">
       {/* 1. Serviço */}
       <section className="flex flex-col gap-2">
         <StepTitle n={1}>Serviço</StepTitle>
@@ -143,11 +143,15 @@ export function BookingFlow(props: Props) {
                 key={s.id}
                 type="button"
                 onClick={() => setServiceId(s.id)}
-                className={`${chip(s.id === serviceId)} flex justify-between text-left`}
+                className={`${chip(s.id === serviceId)} flex items-center gap-3 text-left`}
               >
-                <span>
-                  {s.name}
-                  <span className="block text-xs opacity-75">{formatDuration(s.duration_min)}</span>
+                {s.image_url && (
+                  // eslint-disable-next-line @next/next/no-img-element
+                  <img src={s.image_url} alt="" className="h-12 w-12 shrink-0 rounded-lg object-cover" />
+                )}
+                <span className="flex-1">
+                  <span className="font-medium">{s.name}</span>
+                  <span className="block text-xs opacity-70">{formatDuration(s.duration_min)}</span>
                 </span>
                 <span className="font-semibold">{formatPrice(s.price_cents)}</span>
               </button>
@@ -161,7 +165,7 @@ export function BookingFlow(props: Props) {
         <section className="flex flex-col gap-2">
           <StepTitle n={2}>Profissional</StepTitle>
           {prosForService.length === 0 ? (
-            <p className="text-sm text-neutral-500">Nenhum profissional faz este serviço no momento.</p>
+            <p className="text-sm text-stone-500">Nenhum profissional faz este serviço no momento.</p>
           ) : (
             <div className="flex flex-wrap gap-2">
               {prosForService.map((p) => (
@@ -170,8 +174,14 @@ export function BookingFlow(props: Props) {
                   type="button"
                   disabled={!!rescheduleToken}
                   onClick={() => setProfessionalId(p.id)}
-                  className={chip(p.id === professionalId)}
+                  className={`${chip(p.id === professionalId)} flex items-center gap-2 rounded-full py-1.5 pl-1.5`}
                 >
+                  {p.photo_url ? (
+                    // eslint-disable-next-line @next/next/no-img-element
+                    <img src={p.photo_url} alt="" className="h-8 w-8 rounded-full object-cover" />
+                  ) : (
+                    <span className="flex h-8 w-8 items-center justify-center rounded-full bg-brand-100 text-xs font-semibold text-brand-800">{p.name[0]}</span>
+                  )}
                   {p.name}
                 </button>
               ))}
@@ -185,7 +195,7 @@ export function BookingFlow(props: Props) {
         <section className="flex flex-col gap-3">
           <StepTitle n={3}>Dia e horário</StepTitle>
           {loadError && <Notice kind="error">{loadError}</Notice>}
-          {slots === null && !loadError && <p className="text-sm text-neutral-500">Carregando horários...</p>}
+          {slots === null && !loadError && <p className="text-sm text-stone-500">Carregando horários...</p>}
           {slots && byDay.size === 0 && (
             <Notice>
               Nenhum horário livre no momento. A agenda pode ainda não ter sido aberta. Tente outro profissional ou
@@ -229,7 +239,7 @@ export function BookingFlow(props: Props) {
       {slot && service && (
         <section className="flex flex-col gap-3">
           <StepTitle n={4}>Confirmar</StepTitle>
-          <div className="rounded-xl bg-violet-50 p-3 text-sm dark:bg-violet-950">
+          <div className="rounded-2xl border border-brand-200 bg-brand-50 p-4 text-sm dark:border-brand-900 dark:bg-brand-950">
             <p className="font-medium">
               {service.name} com {professionals.find((p) => p.id === professionalId)?.name}
             </p>
@@ -239,7 +249,7 @@ export function BookingFlow(props: Props) {
               )}{" "}
               às {formatTime(slot, tz)}
             </p>
-            <p className="text-neutral-600 dark:text-neutral-400">
+            <p className="text-stone-600 dark:text-stone-400">
               {formatDuration(duration)} · {formatPrice(price)}
             </p>
           </div>
@@ -282,7 +292,7 @@ export function BookingFlow(props: Props) {
               </>
             )}
             {state.error && <Notice kind="error">{state.error}</Notice>}
-            <Button disabled={pending} className="py-3 text-lg">
+            <Button disabled={pending} className="rounded-2xl py-4 text-base">
               {pending ? "Confirmando..." : rescheduleToken ? "Confirmar novo horário" : "Confirmar agendamento"}
             </Button>
           </form>
