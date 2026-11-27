@@ -63,12 +63,14 @@ export function Notice({
   kind = "info",
   children,
 }: {
-  kind?: "info" | "error";
+  kind?: "info" | "error" | "success";
   children: React.ReactNode;
 }) {
   const color =
     kind === "error"
       ? "border-red-300 bg-red-50 text-red-800 dark:border-red-900 dark:bg-red-950 dark:text-red-200"
+      : kind === "success"
+      ? "border-green-300 bg-green-50 text-green-800 dark:border-green-900 dark:bg-green-950 dark:text-green-200"
       : "border-violet-300 bg-violet-50 text-violet-900 dark:border-violet-900 dark:bg-violet-950 dark:text-violet-200";
   return <p className={`rounded-lg border p-3 text-sm ${color}`}>{children}</p>;
 }

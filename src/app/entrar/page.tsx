@@ -9,9 +9,9 @@ export const metadata = { title: "Entrar | Agenda Salão" };
 export default async function EntrarPage({
   searchParams,
 }: {
-  searchParams: Promise<{ erro?: string }>;
+  searchParams: Promise<{ erro?: string; confirmado?: string }>;
 }) {
-  const { erro } = await searchParams;
+  const { erro, confirmado } = await searchParams;
 
   if (isSupabaseConfigured()) {
     const supabase = await createClient();
@@ -30,6 +30,11 @@ export default async function EntrarPage({
       {!isSupabaseConfigured() && (
         <Notice kind="error">
           O banco de dados ainda não foi configurado (veja o README).
+        </Notice>
+      )}
+      {confirmado && !erro && (
+        <Notice kind="success">
+          E-mail confirmado! Agora é só entrar com seu e-mail e senha.
         </Notice>
       )}
       {erro && (
