@@ -95,7 +95,13 @@ export async function deleteService(formData: FormData) {
     .select("id", { count: "exact", head: true })
     .eq("service_id", id);
 
-  const { error } = history
+  // vendido em algum pacote: também só arquiva (o saldo do cliente continua certo)
+  const { count: sold } = await supabase
+    .from("client_package_items")
+    .select("service_id", { count: "exact", head: true })
+    .eq("service_id", id);
+
+  const { error } = history || sold
     ? await supabase
         .from("services")
         .update({ active: false, archived_at: new Date().toISOString() })

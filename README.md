@@ -76,5 +76,6 @@ npm run dev
 7. ✅ Área do cliente: "Meus agendamentos" (entra com Google ou código por e-mail), remarcar/desmarcar e app instalável com a cara de cada salão
 8. ✅ Página do salão com abas (serviços, equipe, local), mapa, "Como chegar", horário de funcionamento e "Aberto agora"
 9. ✅ Avaliações: cliente atendido dá nota ao profissional e ao salão pelo link do agendamento; dono responde e oculta; notas aparecem na página
-10. Pacotes e pagamentos (Mercado Pago)
-11. Relatórios do mês
+10. ✅ Pacotes: o dono cria combos com desconto (aparecem na página do salão), vende no balcão pela ficha do cliente e controla o saldo de sessões; o cliente vê o saldo em "Meus agendamentos"
+11. Pagamentos (Mercado Pago): sinal em datas especiais, pacote online e cartão salvo
+12. Relatórios do mês

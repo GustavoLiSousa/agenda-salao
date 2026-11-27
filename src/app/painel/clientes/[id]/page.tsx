@@ -5,7 +5,9 @@ import { formatPhone, formatPrice, whatsappLink } from "@/lib/format";
 import { requireSalon } from "@/lib/session";
 import { addDays, dayKey, formatTime, shortDay, todayIn } from "@/lib/time";
 import type { AppointmentStatus } from "@/lib/types";
+import type { ClientPackage, SalonPackage } from "@/lib/packages";
 import { saveClient, setReturnDays } from "../actions";
+import { PackagesCard } from "./packages-card";
 
 export const metadata = { title: "Cliente | Agenda Salão" };
 
@@ -20,6 +22,10 @@ const OK: Record<string, string> = {
   "1": "Dados salvos.",
   novo: "Cliente cadastrado.",
   retorno: "Retorno atualizado.",
+  pacote: "Pacote vendido. O saldo já está abaixo.",
+  uso: "Sessão descontada do pacote.",
+  desfeito: "Uso desfeito. A sessão voltou para o saldo.",
+  cancelado: "Pacote cancelado.",
 };
 
 const RETURN_CHOICES = [7, 15, 21, 30, 45, 60];
@@ -53,7 +59,7 @@ export default async function ClientePage({
   const salon = membership.salon;
   const tz = salon.timezone;
 
-  const [{ data: c }, { data: hist }] = await Promise.all([
+  const [{ data: c }, { data: hist }, { data: owned }, { data: offers }] = await Promise.all([
     supabase.from("client_stats").select("*").eq("client_id", id).eq("salon_id", salon.id).maybeSingle<ClientStats>(),
     supabase
       .from("appointments")
@@ -62,6 +68,22 @@ export default async function ClientePage({
       .order("starts_at", { ascending: false })
       .limit(50)
       .returns<Hist[]>(),
+    supabase
+      .from("client_packages")
+      .select(
+        "id, name, price_cents, purchased_at, expires_at, status, notes, items:client_package_items(service_id, quantity, used, service:services(name)), uses:package_uses(id, service_id, used_at, undone_at)",
+      )
+      .eq("client_id", id)
+      .order("purchased_at", { ascending: false })
+      .order("used_at", { referencedTable: "package_uses", ascending: false })
+      .returns<ClientPackage[]>(),
+    supabase
+      .from("packages")
+      .select("*, items:package_items(service_id, quantity, service:services(name, price_cents, active))")
+      .eq("salon_id", salon.id)
+      .eq("active", true)
+      .order("sort_order")
+      .returns<SalonPackage[]>(),
   ]);
   if (!c) notFound();
 
@@ -153,6 +175,14 @@ export default async function ClientePage({
         </form>
         <p className="text-xs text-stone-400">Automático = usa o retorno do último serviço ou a média das visitas.</p>
       </Card>
+
+      <PackagesCard
+        clientId={c.client_id}
+        owned={owned ?? []}
+        offers={(offers ?? []).filter((p) => p.items.length > 0)}
+        tz={tz}
+        isOwner={membership.role === "owner"}
+      />
 
       {loyalty && (
         <Card>

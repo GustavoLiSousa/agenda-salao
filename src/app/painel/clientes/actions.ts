@@ -2,7 +2,7 @@
 
 import { revalidatePath } from "next/cache";
 import { redirect } from "next/navigation";
-import { parseIntOrNull } from "@/lib/parse";
+import { parseIntOrNull, parsePriceToCents } from "@/lib/parse";
 import { requireSalon } from "@/lib/session";
 
 export async function saveClient(formData: FormData) {
@@ -68,4 +68,71 @@ export async function setReturnDays(formData: FormData) {
   revalidatePath(`/painel/clientes/${id}`);
   revalidatePath("/painel/clientes");
   redirect(`/painel/clientes/${id}?ok=retorno`);
+}
+
+// ---------------------------------------------------------------------
+// Pacotes do cliente
+// ---------------------------------------------------------------------
+function backToClient(clientId: string, q: string): never {
+  redirect(`/painel/clientes/${clientId}?${q}#pacotes`);
+}
+
+export async function sellPackage(formData: FormData) {
+  const { supabase } = await requireSalon();
+  const clientId = String(formData.get("client_id"));
+  const packageId = String(formData.get("package_id") ?? "");
+  if (!packageId) backToClient(clientId, "erro=" + encodeURIComponent("Escolha o pacote."));
+  const raw = String(formData.get("price") ?? "").trim();
+  const price = raw ? parsePriceToCents(raw) : null;
+  if (price !== null && Number.isNaN(price)) backToClient(clientId, "erro=" + encodeURIComponent("Valor inválido."));
+  const { error } = await supabase.rpc("sell_package", {
+    p_client: clientId,
+    p_package: packageId,
+    p_price_cents: price,
+    p_notes: String(formData.get("notes") ?? ""),
+  });
+  if (error) backToClient(clientId, "erro=" + encodeURIComponent(error.message));
+  revalidatePath(`/painel/clientes/${clientId}`);
+  backToClient(clientId, "ok=pacote");
+}
+
+export async function registerPackageUse(formData: FormData) {
+  const { supabase } = await requireSalon();
+  const clientId = String(formData.get("client_id"));
+  const { error } = await supabase.rpc("use_package", {
+    p_client_package: String(formData.get("client_package_id")),
+    p_service: String(formData.get("service_id")),
+    p_appointment: String(formData.get("appointment_id") ?? "") || null,
+  });
+  const back = String(formData.get("back") ?? "");
+  if (back.startsWith("/painel/")) {
+    if (error) redirect(`${back}${back.includes("?") ? "&" : "?"}erro=${encodeURIComponent(error.message)}`);
+    revalidatePath(back.split("?")[0]);
+    redirect(back);
+  }
+  if (error) backToClient(clientId, "erro=" + encodeURIComponent(error.message));
+  revalidatePath(`/painel/clientes/${clientId}`);
+  backToClient(clientId, "ok=uso");
+}
+
+export async function undoPackageUse(formData: FormData) {
+  const { supabase } = await requireSalon();
+  const clientId = String(formData.get("client_id"));
+  const { error } = await supabase.rpc("undo_package_use", { p_use: String(formData.get("use_id")) });
+  if (error) backToClient(clientId, "erro=" + encodeURIComponent(error.message));
+  revalidatePath(`/painel/clientes/${clientId}`);
+  backToClient(clientId, "ok=desfeito");
+}
+
+export async function cancelClientPackage(formData: FormData) {
+  const { supabase, membership } = await requireSalon();
+  const clientId = String(formData.get("client_id"));
+  if (membership.role !== "owner") backToClient(clientId, "erro=" + encodeURIComponent("Só o dono pode cancelar um pacote vendido."));
+  const { error } = await supabase
+    .from("client_packages")
+    .update({ status: "cancelled" })
+    .eq("id", String(formData.get("client_package_id")));
+  if (error) backToClient(clientId, "erro=" + encodeURIComponent(error.message));
+  revalidatePath(`/painel/clientes/${clientId}`);
+  backToClient(clientId, "ok=cancelado");
 }
