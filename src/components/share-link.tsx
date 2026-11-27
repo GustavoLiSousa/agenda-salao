@@ -9,11 +9,11 @@ export function ShareLink({ slug, salonName }: { slug: string; salonName: string
   useEffect(() => setUrl(`${window.location.origin}/${slug}`), [slug]);
 
   return (
-    <div className="flex flex-col gap-2 rounded-xl border border-neutral-200 bg-white p-4 dark:border-neutral-800 dark:bg-neutral-900">
-      <p className="text-sm font-medium">Link de agendamento do salão</p>
-      <code className="break-all rounded bg-neutral-100 px-2 py-1 text-sm dark:bg-neutral-800">
-        {url}
-      </code>
+    <div className="flex flex-col gap-3 rounded-2xl bg-stone-900 p-5 text-stone-100 dark:bg-stone-800">
+      <div>
+        <p className="text-xs font-medium uppercase tracking-wider text-brand-300">Seu link de agendamento</p>
+        <p className="mt-1 break-all font-mono text-sm text-stone-300">{url.replace(/^https?:\/\//, "")}</p>
+      </div>
       <div className="flex flex-wrap gap-2">
         <button
           type="button"
@@ -22,7 +22,7 @@ export function ShareLink({ slug, salonName }: { slug: string; salonName: string
             setCopied(true);
             setTimeout(() => setCopied(false), 2000);
           }}
-          className="rounded-lg border border-neutral-300 px-3 py-1.5 text-sm dark:border-neutral-700"
+          className="rounded-xl bg-white px-3.5 py-2 text-sm font-semibold text-stone-900 transition hover:bg-stone-100 active:scale-[0.98]"
         >
           {copied ? "Copiado!" : "Copiar link"}
         </button>
@@ -30,14 +30,14 @@ export function ShareLink({ slug, salonName }: { slug: string; salonName: string
           href={whatsappLink(null, `Agende seu horário no ${salonName} pelo link: ${url}`)}
           target="_blank"
           rel="noreferrer"
-          className="rounded-lg bg-green-600 px-3 py-1.5 text-sm font-semibold text-white"
+          className="rounded-xl bg-[#1f9d55] px-3.5 py-2 text-sm font-semibold text-white transition hover:bg-[#188247] active:scale-[0.98]"
         >
           Enviar no WhatsApp
         </a>
         <a
           href={`/${slug}`}
           target="_blank"
-          className="rounded-lg border border-neutral-300 px-3 py-1.5 text-sm dark:border-neutral-700"
+          className="rounded-xl border border-stone-600 px-3.5 py-2 text-sm font-medium text-stone-200 transition hover:bg-stone-800"
         >
           Ver como cliente
         </a>

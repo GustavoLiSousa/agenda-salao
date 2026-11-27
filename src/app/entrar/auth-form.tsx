@@ -11,13 +11,13 @@ export function AuthForm() {
 
   return (
     <div className="flex flex-col gap-4">
-      <div className="grid grid-cols-2 rounded-lg bg-neutral-200 p-1 text-sm font-medium dark:bg-neutral-800">
+      <div className="grid grid-cols-2 rounded-xl bg-stone-200/70 p-1 text-sm font-medium dark:bg-stone-800">
         {(["entrar", "criar"] as const).map((m) => (
           <button
             key={m}
             type="button"
             onClick={() => setMode(m)}
-            className={`rounded-md py-2 ${mode === m ? "bg-white shadow dark:bg-neutral-950" : ""}`}
+            className={`rounded-lg py-2 transition ${mode === m ? "bg-white shadow-sm dark:bg-stone-950" : "text-stone-500"}`}
           >
             {m === "entrar" ? "Entrar" : "Criar conta"}
           </button>

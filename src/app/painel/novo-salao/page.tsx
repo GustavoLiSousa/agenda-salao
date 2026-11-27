@@ -11,8 +11,8 @@ export default async function NovoSalaoPage() {
   return (
     <main className="mx-auto flex max-w-sm flex-col gap-6 py-6">
       <div>
-        <h1 className="text-2xl font-bold">Cadastre seu salão</h1>
-        <p className="text-sm text-neutral-500">
+        <h1 className="font-display text-3xl font-semibold">Cadastre seu salão</h1>
+        <p className="text-sm text-stone-500">
           Leva 1 minuto. Depois você adiciona serviços, profissionais e horários.
         </p>
       </div>

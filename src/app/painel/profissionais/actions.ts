@@ -5,6 +5,7 @@ import { redirect } from "next/navigation";
 import { parseIntOrNull } from "@/lib/parse";
 import { requireSalon } from "@/lib/session";
 import { zonedToDate } from "@/lib/time";
+import { uploadImage } from "@/lib/upload";
 
 function back(id: string | null, params: string): never {
   redirect(id ? `/painel/profissionais/${id}?${params}` : `/painel/profissionais?${params}`);
@@ -47,7 +48,7 @@ export async function createProfessional(formData: FormData) {
 }
 
 export async function saveProfessional(formData: FormData) {
-  const { supabase } = await requireSalon();
+  const { supabase, membership } = await requireSalon();
   const id = String(formData.get("id"));
   const name = String(formData.get("name") ?? "").trim();
   if (name.length < 2) fail(id, "Informe o nome.");
@@ -63,9 +64,19 @@ export async function saveProfessional(formData: FormData) {
   if (release_mode === "weekly" && (release_weekday === null || !release_time))
     fail(id, "Escolha o dia e a hora em que a agenda abre.");
 
+  let photo: { photo_url?: string | null } = {};
+  try {
+    const url = await uploadImage(supabase, membership.salon.id, formData.get("photo"), "equipe");
+    if (url) photo = { photo_url: url };
+    else if (formData.get("remove_photo") === "on") photo = { photo_url: null };
+  } catch (e) {
+    fail(id, (e as Error).message);
+  }
+
   const { error } = await supabase
     .from("professionals")
     .update({
+      ...photo,
       name,
       phone,
       bio: String(formData.get("bio") ?? "").trim() || null,

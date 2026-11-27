@@ -47,11 +47,11 @@ export function leadStatus(c: ClientStats, inactiveAfterDays: number): LeadStatu
 }
 
 export const LEAD_LABEL: Record<LeadStatus, { label: string; cls: string }> = {
-  agendado: { label: "Agendado", cls: "bg-violet-100 text-violet-800 dark:bg-violet-950 dark:text-violet-200" },
+  agendado: { label: "Agendado", cls: "bg-brand-100 text-brand-800 dark:bg-brand-950 dark:text-brand-200" },
   sumido: { label: "Sumido", cls: "bg-red-100 text-red-800 dark:bg-red-950 dark:text-red-200" },
   vencendo: { label: "Hora de voltar", cls: "bg-amber-100 text-amber-800 dark:bg-amber-950 dark:text-amber-200" },
   em_dia: { label: "Em dia", cls: "bg-green-100 text-green-800 dark:bg-green-950 dark:text-green-200" },
-  sem_visita: { label: "Sem visita", cls: "bg-neutral-200 text-neutral-700 dark:bg-neutral-800 dark:text-neutral-300" },
+  sem_visita: { label: "Sem visita", cls: "bg-stone-200 text-stone-700 dark:bg-stone-800 dark:text-stone-300" },
 };
 
 export function firstName(name: string | null) {

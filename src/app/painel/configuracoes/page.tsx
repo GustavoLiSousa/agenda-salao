@@ -1,8 +1,21 @@
-import { Button, Card, Field, Notice } from "@/components/ui";
+import { ImageInput } from "@/components/image-input";
+import { Button, Card, Field, Notice, PageHeader } from "@/components/ui";
 import { requireSalon } from "@/lib/session";
 import { saveSettings } from "./actions";
 
 export const metadata = { title: "Ajustes | Agenda Salão" };
+
+function Section({ title, desc, children }: { title: string; desc?: string; children: React.ReactNode }) {
+  return (
+    <Card className="grid gap-4 sm:grid-cols-[220px_1fr] sm:gap-6">
+      <div>
+        <h2 className="font-display text-lg font-semibold">{title}</h2>
+        {desc && <p className="mt-1 text-sm text-stone-500">{desc}</p>}
+      </div>
+      <div className="grid content-start gap-3 sm:grid-cols-2">{children}</div>
+    </Card>
+  );
+}
 
 export default async function ConfiguracoesPage({
   searchParams,
@@ -15,62 +28,49 @@ export default async function ConfiguracoesPage({
   const wa = s.whatsapp?.replace(/^55/, "") ?? "";
 
   return (
-    <main className="flex flex-col gap-4">
-      <h1 className="text-2xl font-bold">Ajustes do salão</h1>
-      {q.ok && <Notice>Ajustes salvos.</Notice>}
+    <main className="mx-auto flex w-full max-w-4xl flex-col gap-5">
+      <PageHeader title="Ajustes" subtitle={`Seu link: /${s.slug}`} />
+      {q.ok && <Notice kind="success">Ajustes salvos.</Notice>}
       {q.erro && <Notice kind="error">{q.erro}</Notice>}
 
       <form action={saveSettings} className="flex flex-col gap-4">
-        <Card className="grid gap-3 sm:grid-cols-2">
-          <h2 className="font-semibold sm:col-span-2">Dados</h2>
+        <Section title="Aparência" desc="Capa e logo aparecem na página que o cliente abre.">
+          <div className="sm:col-span-2">
+            <ImageInput name="cover" label="Foto de capa" current={s.cover_url} aspect="aspect-[16/7]" removeName="remove_cover" />
+          </div>
+          <div className="w-36">
+            <ImageInput name="logo" label="Logo" current={s.logo_url} aspect="aspect-square" removeName="remove_logo" />
+          </div>
+        </Section>
+
+        <Section title="Dados do salão">
           <Field label="Nome do salão" name="name" defaultValue={s.name} required />
           <Field label="WhatsApp" name="whatsapp" type="tel" defaultValue={wa} placeholder="11 99999-9999" />
           <Field label="Endereço" name="address" defaultValue={s.address ?? ""} />
           <Field label="Instagram" name="instagram" defaultValue={s.instagram ?? ""} placeholder="@seusalao" />
-          <p className="text-xs text-neutral-500 sm:col-span-2">Link para clientes: /{s.slug}</p>
-        </Card>
+        </Section>
 
-        <Card className="grid gap-3 sm:grid-cols-2">
-          <h2 className="font-semibold sm:col-span-2">Regras</h2>
+        <Section title="Regras">
+          <Field label="Cliente desmarca até (horas antes)" name="cancel_min_hours" type="number" min={0} max={72} defaultValue={s.cancel_min_hours} />
           <Field
-            label="Cliente pode desmarcar até (horas antes)"
-            name="cancel_min_hours"
-            type="number"
-            min={0}
-            max={72}
-            defaultValue={s.cancel_min_hours}
-          />
-          <Field
-            label="Considerar cliente sumido após (dias)"
+            label="Cliente sumido após (dias)"
             name="inactive_after_days"
             type="number"
             min={1}
             max={365}
             defaultValue={s.inactive_after_days}
-            hint="Usado quando o cliente não tem frequência própria."
+            hint="Quando o cliente e o serviço não têm retorno próprio."
           />
-        </Card>
+        </Section>
 
-        <Card className="grid gap-3 sm:grid-cols-2">
-          <h2 className="font-semibold sm:col-span-2">Cartão fidelidade</h2>
-          <Field
-            label="A cada quantas visitas"
-            name="loyalty_visits"
-            type="number"
-            min={2}
-            max={50}
-            defaultValue={s.loyalty_visits ?? ""}
-            placeholder="Ex.: 10 (vazio = desligado)"
-          />
-          <Field
-            label="Prêmio"
-            name="loyalty_reward"
-            defaultValue={s.loyalty_reward ?? ""}
-            placeholder="Ex.: 1 corte grátis"
-          />
-        </Card>
+        <Section title="Cartão fidelidade" desc="Deixe vazio para desligar.">
+          <Field label="A cada quantas visitas" name="loyalty_visits" type="number" min={2} max={50} defaultValue={s.loyalty_visits ?? ""} placeholder="Ex.: 10" />
+          <Field label="Prêmio" name="loyalty_reward" defaultValue={s.loyalty_reward ?? ""} placeholder="Ex.: 1 corte grátis" />
+        </Section>
 
-        <Button className="self-start">Salvar ajustes</Button>
+        <div className="sticky bottom-20 z-10 flex justify-end md:bottom-4">
+          <Button className="shadow-lg">Salvar ajustes</Button>
+        </div>
       </form>
     </main>
   );

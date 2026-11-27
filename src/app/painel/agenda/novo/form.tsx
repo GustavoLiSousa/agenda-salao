@@ -14,9 +14,11 @@ type Props = {
   links: { professional_id: string; service_id: string }[];
   initialProfessional: string;
   initialTime?: string;
+  initialName?: string;
+  initialPhone?: string;
 };
 
-export function StaffBookingForm({ tz, day: initialDay, professionals, services, links, initialProfessional, initialTime }: Props) {
+export function StaffBookingForm({ tz, day: initialDay, professionals, services, links, initialProfessional, initialTime, initialName, initialPhone }: Props) {
   const [state, action, pending] = useActionState<StaffBookState, FormData>(bookByStaff, {});
   const [pro, setPro] = useState(initialProfessional || professionals[0]?.id || "");
   const servicesForPro = services.filter((s) => links.some((l) => l.professional_id === pro && l.service_id === s.id));
@@ -64,11 +66,11 @@ export function StaffBookingForm({ tz, day: initialDay, professionals, services,
         <Field label="Horário" name="time" type="time" value={time} onChange={(e) => setTime(e.target.value)} required />
       </div>
       <div className="text-sm">
-        <p className="mb-1 text-neutral-500">Horários livres neste dia (toque para escolher):</p>
+        <p className="mb-1 text-stone-500">Horários livres neste dia (toque para escolher):</p>
         {free === null ? (
-          <p className="text-neutral-400">Carregando...</p>
+          <p className="text-stone-400">Carregando...</p>
         ) : free.length === 0 ? (
-          <p className="text-neutral-400">Nenhum livre pelas regras da agenda. Você ainda pode encaixar digitando o horário.</p>
+          <p className="text-stone-400">Nenhum livre pelas regras da agenda. Você ainda pode encaixar digitando o horário.</p>
         ) : (
           <div className="flex flex-wrap gap-1.5">
             {free.map((t) => (
@@ -76,7 +78,7 @@ export function StaffBookingForm({ tz, day: initialDay, professionals, services,
                 key={t}
                 type="button"
                 onClick={() => setTime(t)}
-                className={`rounded-lg border px-2 py-1 text-xs ${t === time ? "border-violet-600 bg-violet-600 text-white" : "border-neutral-300 dark:border-neutral-700"}`}
+                className={`rounded-lg border px-2 py-1 text-xs ${t === time ? "border-stone-900 bg-stone-900 dark:border-stone-100 text-white dark:bg-stone-100 dark:text-stone-900" : "border-stone-300 dark:border-stone-700"}`}
               >
                 {t}
               </button>
@@ -85,8 +87,8 @@ export function StaffBookingForm({ tz, day: initialDay, professionals, services,
         )}
       </div>
       <div className="grid gap-3 sm:grid-cols-2">
-        <Field label="Nome do cliente" name="name" required />
-        <Field label="WhatsApp do cliente" name="phone" type="tel" inputMode="tel" placeholder="11 99999-9999" required />
+        <Field label="Nome do cliente" name="name" defaultValue={initialName} required />
+        <Field label="WhatsApp do cliente" name="phone" type="tel" inputMode="tel" placeholder="11 99999-9999" defaultValue={initialPhone?.replace(/^55/, "")} required />
       </div>
       <Field label="Observação (opcional)" name="notes" />
       {state.error && <Notice kind="error">{state.error}</Notice>}

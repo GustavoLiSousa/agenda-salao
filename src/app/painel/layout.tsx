@@ -1,44 +1,28 @@
 import Link from "next/link";
 import { signOut } from "@/app/entrar/actions";
+import { BottomNav, TopNav } from "@/components/painel-nav";
 
 export const dynamic = "force-dynamic";
 
-const NAV = [
-  { href: "/painel", label: "Início" },
-  { href: "/painel/agenda", label: "Agenda" },
-  { href: "/painel/clientes", label: "Clientes" },
-  { href: "/painel/servicos", label: "Serviços" },
-  { href: "/painel/profissionais", label: "Profissionais" },
-  { href: "/painel/configuracoes", label: "Ajustes" },
-];
-
 export default function PainelLayout({ children }: { children: React.ReactNode }) {
   return (
-    <div className="min-h-screen">
-      <header className="sticky top-0 z-10 border-b border-neutral-200 bg-white/90 backdrop-blur dark:border-neutral-800 dark:bg-neutral-950/90">
-        <div className="mx-auto flex max-w-3xl items-center justify-between px-4 py-3">
-          <Link href="/painel" className="font-bold">
-            Agenda Salão
+    <div className="min-h-screen pb-24 md:pb-10">
+      <header className="sticky top-0 z-20 border-b border-stone-200/80 bg-[var(--background)]/90 backdrop-blur dark:border-stone-800">
+        <div className="mx-auto flex max-w-5xl items-center justify-between gap-4 px-4 py-3">
+          <Link href="/painel" className="flex items-center gap-2">
+            <span className="flex h-8 w-8 items-center justify-center rounded-lg bg-stone-900 font-display text-sm font-semibold text-brand-300 dark:bg-stone-100 dark:text-brand-700">
+              A
+            </span>
+            <span className="font-display text-lg font-semibold">Agenda</span>
           </Link>
+          <TopNav />
           <form action={signOut}>
-            <button className="text-sm text-neutral-500 hover:text-neutral-900 dark:hover:text-neutral-100">
-              Sair
-            </button>
+            <button className="text-sm text-stone-500 hover:text-stone-900 dark:hover:text-stone-100">Sair</button>
           </form>
         </div>
-        <nav className="mx-auto flex max-w-3xl gap-1 overflow-x-auto px-3 pb-2 text-sm">
-          {NAV.map((n) => (
-            <Link
-              key={n.href}
-              href={n.href}
-              className="rounded-full px-3 py-1 whitespace-nowrap text-neutral-600 hover:bg-neutral-100 dark:text-neutral-300 dark:hover:bg-neutral-800"
-            >
-              {n.label}
-            </Link>
-          ))}
-        </nav>
       </header>
-      <div className="mx-auto max-w-3xl p-4">{children}</div>
+      <div className="mx-auto max-w-5xl px-4 py-5">{children}</div>
+      <BottomNav />
     </div>
   );
 }

@@ -42,8 +42,8 @@ export default async function AgendamentoPage({
   );
 
   return (
-    <main className="mx-auto flex min-h-screen max-w-md flex-col gap-4 p-4">
-      <Link href={`/${slug}`} className="text-sm text-violet-600">
+    <main className="mx-auto flex min-h-screen max-w-md flex-col gap-4 px-5 py-6">
+      <Link href={`/${slug}`} className="text-sm text-stone-500 hover:text-stone-900 dark:hover:text-stone-100">
         ‹ {a.salon_name}
       </Link>
 
@@ -57,15 +57,16 @@ export default async function AgendamentoPage({
       {q.erro && <Notice kind="error">{q.erro}</Notice>}
 
       <Card className="flex flex-col gap-1">
-        <p className={`text-xs font-semibold uppercase ${a.status === "confirmed" ? "text-green-600" : "text-neutral-500"}`}>
+        <p className={`text-xs font-semibold uppercase tracking-[0.2em] ${a.status === "confirmed" ? "text-emerald-600" : "text-stone-500"}`}>
           {STATUS[a.status] ?? a.status}
         </p>
-        <h1 className="text-xl font-bold">{a.service_name}</h1>
-        <p className="first-letter:uppercase">{when}</p>
-        <p className="text-sm text-neutral-500">
+        <h1 className="font-display text-3xl font-semibold">{a.service_name}</h1>
+        <div className="my-2 h-px bg-stone-100 dark:bg-stone-800" />
+        <p className="text-lg font-medium first-letter:uppercase">{when}</p>
+        <p className="text-sm text-stone-500">
           Com {a.professional_name} · {formatDuration(minutes)} · {formatPrice(a.price_cents)}
         </p>
-        {a.salon_address && <p className="text-sm text-neutral-500">{a.salon_address}</p>}
+        {a.salon_address && <p className="text-sm text-stone-500">{a.salon_address}</p>}
       </Card>
 
       {active && (
@@ -74,13 +75,13 @@ export default async function AgendamentoPage({
             href={googleCalendarUrl(calendarEventFor(a))}
             target="_blank"
             rel="noreferrer"
-            className="rounded-xl bg-violet-600 p-3 text-center font-semibold text-white"
+            className="rounded-2xl bg-stone-900 p-4 text-center font-semibold text-white transition hover:bg-stone-800 dark:bg-stone-100 dark:text-stone-900"
           >
             Salvar no Google Agenda
           </a>
           <a
             href={`/api/ics/${token}`}
-            className="rounded-xl border border-violet-600 p-3 text-center font-semibold text-violet-700 dark:text-violet-300"
+            className="rounded-2xl border border-stone-300 bg-white p-4 text-center font-semibold text-stone-800 transition hover:border-stone-500 dark:border-stone-700 dark:bg-stone-900 dark:text-stone-200"
           >
             Salvar na agenda do celular (com lembrete)
           </a>
@@ -89,7 +90,7 @@ export default async function AgendamentoPage({
               href={msgSalon}
               target="_blank"
               rel="noreferrer"
-              className="rounded-xl border border-green-600 p-3 text-center font-semibold text-green-700 dark:text-green-400"
+              className="rounded-2xl bg-[#1f9d55] p-4 text-center font-semibold text-white transition hover:bg-[#188247]"
             >
               Falar com o salão no WhatsApp
             </a>
@@ -99,13 +100,13 @@ export default async function AgendamentoPage({
 
       {canChange && (
         <Card className="flex flex-col gap-3">
-          <p className="text-sm text-neutral-500">
+          <p className="text-sm text-stone-500">
             Precisa mudar? Dá para remarcar ou desmarcar por aqui até {a.cancel_min_hours}h antes do horário.
           </p>
           <div className="flex flex-wrap gap-2">
             <Link
               href={`/${slug}/agendar?remarcar=${token}`}
-              className="rounded-lg border border-neutral-300 px-3 py-1.5 text-sm dark:border-neutral-700"
+              className="rounded-xl border border-stone-300 px-4 py-2 text-sm font-medium dark:border-stone-700"
             >
               Remarcar
             </Link>
@@ -114,14 +115,14 @@ export default async function AgendamentoPage({
                 <input type="hidden" name="slug" value={slug} />
                 <input type="hidden" name="token" value={token} />
                 <GhostButton className="border-red-400 text-red-600">Sim, desmarcar</GhostButton>
-                <Link href={`/${slug}/agendamento/${token}`} className="text-sm text-neutral-500">
+                <Link href={`/${slug}/agendamento/${token}`} className="text-sm text-stone-500">
                   Não
                 </Link>
               </form>
             ) : (
               <Link
                 href={`/${slug}/agendamento/${token}?desmarcar=1`}
-                className="rounded-lg border border-neutral-300 px-3 py-1.5 text-sm text-red-600 dark:border-neutral-700"
+                className="rounded-xl border border-stone-300 px-4 py-2 text-sm font-medium text-red-600 dark:border-stone-700"
               >
                 Desmarcar
               </Link>
@@ -130,7 +131,7 @@ export default async function AgendamentoPage({
         </Card>
       )}
       {active && !canChange && (
-        <p className="text-sm text-neutral-500">
+        <p className="text-sm text-stone-500">
           Para mudar este horário agora, fale com o salão pelo WhatsApp.
         </p>
       )}
@@ -138,7 +139,7 @@ export default async function AgendamentoPage({
       {!active && (
         <Link
           href={`/${slug}/agendar`}
-          className="rounded-xl bg-violet-600 p-3 text-center font-semibold text-white"
+          className="rounded-2xl bg-stone-900 p-4 text-center font-semibold text-white transition hover:bg-stone-800 dark:bg-stone-100 dark:text-stone-900"
         >
           Agendar outro horário
         </Link>

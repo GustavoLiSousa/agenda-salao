@@ -20,3 +20,12 @@ export function whatsappLink(phone: string | null | undefined, text: string) {
   const base = digits ? `https://wa.me/${digits}` : "https://wa.me/";
   return `${base}?text=${encodeURIComponent(text)}`;
 }
+
+/** 5511988887777 -> (11) 98888-7777 */
+export function formatPhone(phone: string | null | undefined) {
+  let d = (phone ?? "").replace(/\D/g, "");
+  if (d.length > 11 && d.startsWith("55")) d = d.slice(2);
+  if (d.length === 11) return `(${d.slice(0, 2)}) ${d.slice(2, 7)}-${d.slice(7)}`;
+  if (d.length === 10) return `(${d.slice(0, 2)}) ${d.slice(2, 6)}-${d.slice(6)}`;
+  return phone ?? "";
+}

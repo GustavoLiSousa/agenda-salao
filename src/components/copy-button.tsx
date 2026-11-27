@@ -14,7 +14,7 @@ export function CopyButton({ text, label = "Copiar texto" }: { text: string; lab
           setTimeout(() => setDone(false), 2000);
         } catch {}
       }}
-      className="rounded-lg border border-neutral-300 px-3 py-1.5 text-sm hover:bg-neutral-100 dark:border-neutral-700 dark:hover:bg-neutral-800"
+      className="rounded-lg border border-stone-300 px-3 py-1.5 text-sm hover:bg-stone-100 dark:border-stone-700 dark:hover:bg-stone-800"
     >
       {done ? "Copiado!" : label}
     </button>

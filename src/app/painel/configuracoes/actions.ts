@@ -4,6 +4,7 @@ import { revalidatePath } from "next/cache";
 import { redirect } from "next/navigation";
 import { parseIntOrNull } from "@/lib/parse";
 import { requireSalon } from "@/lib/session";
+import { uploadImage } from "@/lib/upload";
 
 export async function saveSettings(formData: FormData) {
   const { supabase, membership } = await requireSalon();
@@ -21,9 +22,22 @@ export async function saveSettings(formData: FormData) {
   const loyalty = parseIntOrNull(formData.get("loyalty_visits"));
   if (loyalty !== null && (loyalty < 2 || loyalty > 50)) fail("O cartão fidelidade deve ter entre 2 e 50 visitas.");
 
+  const images: { logo_url?: string | null; cover_url?: string | null } = {};
+  try {
+    const logo = await uploadImage(supabase, membership.salon.id, formData.get("logo"), "salao");
+    const cover = await uploadImage(supabase, membership.salon.id, formData.get("cover"), "salao");
+    if (logo) images.logo_url = logo;
+    else if (formData.get("remove_logo") === "on") images.logo_url = null;
+    if (cover) images.cover_url = cover;
+    else if (formData.get("remove_cover") === "on") images.cover_url = null;
+  } catch (e) {
+    fail((e as Error).message);
+  }
+
   const { error } = await supabase
     .from("salons")
     .update({
+      ...images,
       name,
       whatsapp: whatsapp || null,
       address: String(formData.get("address") ?? "").trim() || null,
