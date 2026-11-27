@@ -61,5 +61,5 @@ npm run dev
 3. ✅ Gestão: serviços, profissionais, horários, folgas e abertura da agenda
 4. ✅ Agendamento do cliente com nome e telefone: serviço → profissional → data → horário livre, confirmação, Google Agenda, lembrete (.ics) e link pessoal para remarcar/desmarcar
 5. ✅ Agenda do salão (dia/semana/mês), atendido/falta/desmarcar, agendar pelo balcão, aviso de vaga liberada e "horários livres" para postar
-6. Clientes como leads (sumidos há 30+ dias, frequência 7/15/30), botões de WhatsApp com mensagem pronta
+6. ✅ Clientes como leads (sumidos, frequência de retorno, aniversário), cartão fidelidade, WhatsApp com mensagem pronta e ajustes do salão
 7. Relatórios do mês

@@ -11,6 +11,8 @@ export type Salon = {
   timezone: string;
   cancel_min_hours: number;
   inactive_after_days: number;
+  loyalty_visits: number | null;
+  loyalty_reward: string | null;
 };
 
 export type Professional = {
