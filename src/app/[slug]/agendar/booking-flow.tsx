@@ -2,6 +2,7 @@
 
 import { useActionState, useEffect, useMemo, useState } from "react";
 import { Button, Field, Notice } from "@/components/ui";
+import { Captcha } from "@/components/captcha";
 import { formatDuration, formatPrice } from "@/lib/format";
 import { createClient } from "@/lib/supabase/client";
 import { dayKey, formatTime, todayIn } from "@/lib/time";
@@ -291,6 +292,7 @@ export function BookingFlow(props: Props) {
                   onChange={(e) => setPhone(e.target.value)}
                   required
                 />
+                <Captcha resetKey={state} />
               </>
             )}
             {state.error && <Notice kind="error">{state.error}</Notice>}

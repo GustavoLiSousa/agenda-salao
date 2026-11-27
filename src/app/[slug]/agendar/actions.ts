@@ -3,6 +3,7 @@
 import { redirect } from "next/navigation";
 import { createClient } from "@/lib/supabase/server";
 import { claimTokens, rememberBookingToken } from "@/lib/client-area";
+import { captchaOk } from "@/lib/captcha";
 
 export type BookState = { error?: string };
 
@@ -27,6 +28,10 @@ export async function bookAction(_: BookState, formData: FormData): Promise<Book
     if (error) return { error: cleanError(error.message) };
     await rememberBookingToken(String(data));
     redirect(`/${slug}/agendamento/${data}?remarcado=1`);
+  }
+
+  if (!(await captchaOk(formData))) {
+    return { error: "Não conseguimos confirmar que você não é um robô. Tente de novo." };
   }
 
   const { data, error } = await supabase.rpc("book_as_guest", {
