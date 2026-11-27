@@ -8,6 +8,8 @@ import { formatLongDate, formatTime } from "@/lib/time";
 import { claimTokens } from "@/lib/client-area";
 import { createClient } from "@/lib/supabase/server";
 import { cancelAction } from "./actions";
+import { ReviewForm } from "./review-form";
+import { Stars } from "@/components/stars";
 
 export const dynamic = "force-dynamic";
 export const metadata = { title: "Seu agendamento", robots: { index: false } };
@@ -24,7 +26,7 @@ export default async function AgendamentoPage({
   searchParams,
 }: {
   params: Promise<{ slug: string; token: string }>;
-  searchParams: Promise<{ novo?: string; remarcado?: string; desmarcado?: string; erro?: string; desmarcar?: string }>;
+  searchParams: Promise<{ novo?: string; remarcado?: string; desmarcado?: string; erro?: string; desmarcar?: string; avaliado?: string }>;
 }) {
   const { slug, token } = await params;
   const q = await searchParams;
@@ -38,6 +40,13 @@ export default async function AgendamentoPage({
   } = await supabase.auth.getUser();
   if (user) await claimTokens(supabase, [token]);
   const myArea = `/minha-conta?salao=${slug}`;
+  const { data: review } =
+    a.status === "completed"
+      ? await supabase
+          .rpc("review_by_token", { p_token: token })
+          .maybeSingle<{ salon_rating: number; professional_rating: number; comment: string | null; reply: string | null }>()
+      : { data: null };
+  const canReview = a.status === "completed" && !review && new Date(a.starts_at).getTime() > Date.now() - 60 * 86_400_000;
   const loginHref = `/minha-conta/entrar?next=${encodeURIComponent(`${myArea}&vincular=${token}`)}`;
 
   const tz = a.salon_timezone;
@@ -145,6 +154,30 @@ export default async function AgendamentoPage({
         <p className="text-sm text-stone-500">
           Para mudar este horário agora, fale com o salão pelo WhatsApp.
         </p>
+      )}
+
+      {canReview && (
+        <Card id="avaliar" className="flex scroll-mt-4 flex-col gap-3">
+          <div>
+            <h2 className="font-display text-xl font-semibold">Como foi o atendimento?</h2>
+            <p className="text-sm text-stone-500">Sua avaliação ajuda o salão e outros clientes.</p>
+          </div>
+          <ReviewForm slug={slug} token={token} professionalName={a.professional_name} salonName={a.salon_name} />
+        </Card>
+      )}
+      {review && (
+        <Card id="avaliar" className="flex flex-col gap-2">
+          {q.avaliado && <Notice kind="success">Obrigado pela avaliação!</Notice>}
+          <p className="text-sm">
+            {a.professional_name}: <Stars value={review.professional_rating} /> · Salão: <Stars value={review.salon_rating} />
+          </p>
+          {review.comment && <p className="text-sm text-stone-600 dark:text-stone-300">“{review.comment}”</p>}
+          {review.reply && (
+            <p className="rounded-xl bg-stone-50 p-3 text-sm dark:bg-stone-800">
+              <b>Resposta do salão:</b> {review.reply}
+            </p>
+          )}
+        </Card>
       )}
 
       <Link

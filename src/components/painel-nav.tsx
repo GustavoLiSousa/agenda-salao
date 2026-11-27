@@ -9,6 +9,7 @@ const I = {
   clients: "M16 19v-1a4 4 0 0 0-4-4H7a4 4 0 0 0-4 4v1M9.5 10a3.5 3.5 0 1 0 0-7 3.5 3.5 0 0 0 0 7ZM21 19v-1a4 4 0 0 0-3-3.87M15.5 3.13a3.5 3.5 0 0 1 0 6.75",
   services: "M6 4a2.5 2.5 0 1 0 0 5 2.5 2.5 0 0 0 0-5Zm0 11a2.5 2.5 0 1 0 0 5 2.5 2.5 0 0 0 0-5ZM8 8l12 10M8 16 20 6",
   team: "M12 12a4 4 0 1 0 0-8 4 4 0 0 0 0 8Zm-7 9a7 7 0 0 1 14 0",
+  star: "M12 3.5l2.6 5.3 5.9.9-4.3 4.1 1 5.8L12 16.9l-5.2 2.7 1-5.8L3.5 9.7l5.9-.9z",
   settings: "M4 6h10M18 6h2M4 12h4M12 12h8M4 18h12M20 18h0M16 4v4M10 10v4M18 16v4",
 };
 
@@ -18,6 +19,7 @@ export const NAV = [
   { href: "/painel/clientes", label: "Clientes", icon: I.clients },
   { href: "/painel/servicos", label: "Serviços", icon: I.services },
   { href: "/painel/profissionais", label: "Equipe", icon: I.team },
+  { href: "/painel/avaliacoes", label: "Avaliações", icon: I.star, desktopOnly: true },
   { href: "/painel/configuracoes", label: "Ajustes", icon: I.settings },
 ];
 
@@ -62,7 +64,7 @@ export function BottomNav() {
   return (
     <nav className="fixed inset-x-0 bottom-0 z-20 border-t border-stone-200 bg-white/95 pb-[env(safe-area-inset-bottom)] backdrop-blur md:hidden dark:border-stone-800 dark:bg-stone-950/95">
       <div className="grid grid-cols-6">
-        {NAV.map((n) => {
+        {NAV.filter((n) => !("desktopOnly" in n)).map((n) => {
           const on = active(n.href);
           return (
             <Link

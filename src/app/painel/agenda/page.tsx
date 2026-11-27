@@ -24,6 +24,7 @@ type View = "dia" | "semana" | "mes";
 
 type Row = {
   id: string;
+  manage_token: string;
   starts_at: string;
   ends_at: string;
   status: AppointmentStatus;
@@ -90,7 +91,7 @@ export default async function AgendaPage({
   let query = supabase
     .from("appointments")
     .select(
-      "id, starts_at, ends_at, status, price_cents, notes, source, cancelled_at, professional_id, client:clients(name, phone), service:services(name), professional:professionals(name)",
+      "id, manage_token, starts_at, ends_at, status, price_cents, notes, source, cancelled_at, professional_id, client:clients(name, phone), service:services(name), professional:professionals(name)",
     )
     .eq("salon_id", salon.id)
     .gte("starts_at", zonedToDate(from, "00:00", tz).toISOString())
@@ -103,7 +104,7 @@ export default async function AgendaPage({
     supabase.from("professionals").select("id, name").eq("salon_id", salon.id).eq("active", true).order("name"),
     supabase
       .from("appointments")
-      .select("id, starts_at, ends_at, status, price_cents, notes, source, cancelled_at, professional_id, client:clients(name, phone), service:services(name), professional:professionals(name)")
+      .select("id, manage_token, starts_at, ends_at, status, price_cents, notes, source, cancelled_at, professional_id, client:clients(name, phone), service:services(name), professional:professionals(name)")
       .eq("salon_id", salon.id)
       .eq("status", "cancelled")
       .gt("starts_at", new Date().toISOString())
@@ -271,7 +272,7 @@ export default async function AgendaPage({
                 <ul className="flex flex-col gap-2">
                   {segs.map((s) =>
                     s.kind === "appt" ? (
-                      <AppointmentCard key={(s.ref as Row).id} r={s.ref as Row} tz={tz} returnTo={returnTo} salonName={salon.name} />
+                      <AppointmentCard key={(s.ref as Row).id} r={s.ref as Row} tz={tz} returnTo={returnTo} salonName={salon.name} salonUrl={`${proto}://${host}/${salon.slug}`} />
                     ) : s.kind === "block" ? (
                       <li key={`b${s.start}`} className="rounded-xl border border-dashed border-stone-300 px-4 py-3 text-sm text-stone-500 dark:border-stone-700">
                         <span className="font-mono">{fromMin(s.start)}–{fromMin(Math.min(s.end, 1439))}</span> · Bloqueado
@@ -292,7 +293,7 @@ export default async function AgendaPage({
                     ),
                   )}
                   {cancelled.map((r) => (
-                    <AppointmentCard key={r.id} r={r} tz={tz} returnTo={returnTo} salonName={salon.name} />
+                    <AppointmentCard key={r.id} r={r} tz={tz} returnTo={returnTo} salonName={salon.name} salonUrl={`${proto}://${host}/${salon.slug}`} />
                   ))}
                 </ul>
               </section>
@@ -304,7 +305,7 @@ export default async function AgendaPage({
               {list
                 .filter((r) => !shownPros.some((p) => p.id === r.professional_id))
                 .map((r) => (
-                  <AppointmentCard key={r.id} r={r} tz={tz} returnTo={returnTo} salonName={salon.name} />
+                  <AppointmentCard key={r.id} r={r} tz={tz} returnTo={returnTo} salonName={salon.name} salonUrl={`${proto}://${host}/${salon.slug}`} />
                 ))}
             </ul>
           )}
@@ -367,7 +368,7 @@ export default async function AgendaPage({
   );
 }
 
-function AppointmentCard({ r, tz, returnTo, salonName }: { r: Row; tz: string; returnTo: string; salonName: string }) {
+function AppointmentCard({ r, tz, returnTo, salonName, salonUrl }: { r: Row; tz: string; returnTo: string; salonName: string; salonUrl: string }) {
   const st = STATUS[r.status];
   const name = r.client?.name ?? "Cliente";
   const remind = whatsappLink(
@@ -412,6 +413,19 @@ function AppointmentCard({ r, tz, returnTo, salonName }: { r: Row; tz: string; r
               {action("no_show", "Faltou")}
               {action("cancelled", "Desmarcar", "text-red-600")}
             </>
+          )}
+          {r.status === "completed" && r.client?.phone && (
+            <a
+              href={whatsappLink(
+                r.client.phone,
+                `Olá ${name}! Obrigado pela visita no ${salonName}. Pode avaliar seu atendimento? Leva 10 segundos: ${salonUrl}/agendamento/${r.manage_token}#avaliar`,
+              )}
+              target="_blank"
+              rel="noreferrer"
+              className="rounded-lg border border-amber-500 px-2.5 py-1 text-xs text-amber-700 dark:text-amber-400"
+            >
+              ★ Pedir avaliação
+            </a>
           )}
           {(r.status === "completed" || r.status === "no_show") && action("confirmed", "Desfazer")}
         </div>

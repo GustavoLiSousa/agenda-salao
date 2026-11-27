@@ -103,7 +103,7 @@ export default async function MinhaContaPage({
           <ul className="flex flex-col divide-y divide-stone-100 rounded-2xl border border-stone-200/80 bg-white dark:divide-stone-800 dark:border-stone-800 dark:bg-stone-900">
             {past.map((a) => (
               <li key={a.manage_token}>
-                <Link href={`/${a.salon_slug}/agendamento/${a.manage_token}`} className="flex items-center justify-between gap-3 px-4 py-3">
+                <Link href={`/${a.salon_slug}/agendamento/${a.manage_token}${a.status === "completed" && !a.reviewed ? "#avaliar" : ""}`} className="flex items-center justify-between gap-3 px-4 py-3">
                   <span className="min-w-0">
                     <span className="block truncate font-medium">{a.service_name}</span>
                     <span className="block truncate text-xs text-stone-500">
@@ -111,9 +111,15 @@ export default async function MinhaContaPage({
                       {(!slug || a.salon_slug !== slug) && ` · ${a.salon_name}`}
                     </span>
                   </span>
-                  <span className={`shrink-0 rounded-full px-2.5 py-0.5 text-xs font-medium ${STATUS[a.status].className}`}>
-                    {STATUS[a.status].label}
-                  </span>
+                  {a.status === "completed" && !a.reviewed && new Date(a.starts_at).getTime() > Date.now() - 60 * 86_400_000 ? (
+                    <span className="shrink-0 rounded-full bg-amber-100 px-2.5 py-0.5 text-xs font-semibold text-amber-800 dark:bg-amber-950 dark:text-amber-200">
+                      ★ Avaliar
+                    </span>
+                  ) : (
+                    <span className={`shrink-0 rounded-full px-2.5 py-0.5 text-xs font-medium ${STATUS[a.status].className}`}>
+                      {STATUS[a.status].label}
+                    </span>
+                  )}
                 </Link>
               </li>
             ))}

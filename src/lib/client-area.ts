@@ -53,4 +53,5 @@ export type MyAppointment = {
   salon_address: string | null;
   salon_timezone: string;
   cancel_min_hours: number;
+  reviewed?: boolean;
 };

@@ -118,6 +118,7 @@ export default async function PainelPage() {
           <>
             <LinkButton href="/painel/agenda/novo" variant="primary">+ Agendar</LinkButton>
             <LinkButton href="/painel/agenda" variant="secondary">Agenda completa</LinkButton>
+            <LinkButton href="/painel/avaliacoes" variant="secondary">Avaliações</LinkButton>
           </>
         }
       />
