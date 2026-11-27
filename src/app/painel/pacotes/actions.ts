@@ -69,3 +69,15 @@ export async function togglePackage(formData: FormData) {
   revalidatePath("/painel/pacotes");
   revalidatePath(`/${membership.salon.slug}`);
 }
+
+/** Pedido de pacote feito pelo cliente no app: confirmar a venda ou recusar. */
+export async function handleRequest(formData: FormData) {
+  const { supabase } = await requireSalon();
+  const id = String(formData.get("id") ?? "");
+  const accept = formData.get("accept") === "1";
+  const { error } = await supabase.rpc("handle_package_request", { p_request: id, p_accept: accept });
+  if (error) fail(error.message);
+  revalidatePath("/painel/pacotes");
+  revalidatePath("/painel");
+  redirect(`/painel/pacotes?ok=${accept ? "venda" : "recusado"}#pedidos`);
+}

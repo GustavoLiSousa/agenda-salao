@@ -1,24 +1,19 @@
 import Link from "next/link";
 import { redirect } from "next/navigation";
 import { Card, Notice } from "@/components/ui";
-import { claimTokens, readBookingTokens, type MyAppointment } from "@/lib/client-area";
+import {
+  claimTokens,
+  readBookingTokens,
+  type MyAppointment,
+  type MyPackage,
+  type MyPackageRequest,
+} from "@/lib/client-area";
 import { formatPrice, whatsappLink } from "@/lib/format";
 import { createClient, isSupabaseConfigured } from "@/lib/supabase/server";
 import { formatLongDate, formatTime } from "@/lib/time";
-import { isExpired } from "@/lib/packages";
 import { clientSignOut } from "./actions";
 import { SalonCard, type SalonSummary } from "./salon-card";
-
-type MyPackage = {
-  id: string;
-  name: string;
-  status: string;
-  purchased_at: string;
-  expires_at: string | null;
-  salon_name: string;
-  salon_slug: string;
-  items: { service: string; quantity: number; used: number }[];
-};
+import { MyPackages } from "./my-packages";
 
 export const dynamic = "force-dynamic";
 export const metadata = { title: "Meus agendamentos", robots: { index: false } };
@@ -57,7 +52,7 @@ export default async function MinhaContaPage({
   // (e o do link aberto, quando veio da página de um agendamento)
   await claimTokens(supabase, [...(await readBookingTokens()), ...(vincular ? [vincular] : [])]);
 
-  const [{ data }, { data: salon }, { data: pkgData }] = await Promise.all([
+  const [{ data }, { data: salon }, { data: pkgData }, { data: reqData }] = await Promise.all([
     supabase.rpc("my_appointments_v2").returns<MyAppointment>(),
     slug
       ? supabase
@@ -67,7 +62,9 @@ export default async function MinhaContaPage({
           .maybeSingle<{ name: string; slug: string; logo_url: string | null }>()
       : Promise.resolve({ data: null }),
     supabase.rpc("my_packages").returns<MyPackage>(),
+    supabase.rpc("my_package_requests").returns<MyPackageRequest>(),
   ]);
+  const requests = ((reqData ?? []) as unknown as MyPackageRequest[]).filter((r) => !slug || r.salon_slug === slug);
   const packages = ((pkgData ?? []) as unknown as MyPackage[]).filter((p) => !slug || p.salon_slug === slug);
   const all = (data ?? []) as unknown as MyAppointment[];
   const now = Date.now();
@@ -77,9 +74,21 @@ export default async function MinhaContaPage({
   const past = all.filter((a) => !upcoming.includes(a)).slice(0, 30);
 
   // "Meus salões": onde já agendou ou tem pacote (e o salão aberto agora)
+  const { data: favRows } = await supabase
+    .from("client_favorite_salons")
+    .select("salon:salons(slug)")
+    .eq("user_id", user.id)
+    .order("created_at")
+    .returns<{ salon: { slug: string } | null }[]>();
+  const favSlugs = (favRows ?? []).map((f) => f.salon?.slug).filter((x): x is string => !!x);
   const mySlugs = [
-    ...new Set([...(slug ? [slug] : []), ...all.map((a) => a.salon_slug), ...packages.map((p) => p.salon_slug)]),
-  ].slice(0, 8);
+    ...new Set([
+      ...favSlugs,
+      ...(slug ? [slug] : []),
+      ...all.map((a) => a.salon_slug),
+      ...packages.map((p) => p.salon_slug),
+    ]),
+  ].slice(0, 10);
   const salonCols = "id, slug, name, logo_url, address, whatsapp";
   const [{ data: mine }, { data: found }] = await Promise.all([
     mySlugs.length
@@ -160,7 +169,7 @@ export default async function MinhaContaPage({
           {mySalons.length > 0 ? "Meus salões" : "Encontre seu salão"}
         </h2>
         {mySalons.map((x) => (
-          <SalonCard key={x.id} s={x} />
+          <SalonCard key={x.id} s={x} saved={favSlugs.includes(x.slug)} />
         ))}
         <form action="/minha-conta#saloes" className="flex gap-2">
           {slug && <input type="hidden" name="salao" value={slug} />}
@@ -179,56 +188,25 @@ export default async function MinhaContaPage({
           (foundSalons.length === 0 ? (
             <Notice>Nenhum salão encontrado com &quot;{query}&quot;.</Notice>
           ) : (
-            foundSalons.filter((x) => !mySalons.some((m) => m.id === x.id)).map((x) => <SalonCard key={x.id} s={x} />)
+            foundSalons
+              .filter((x) => !mySalons.some((m) => m.id === x.id))
+              .map((x) => (
+                <SalonCard
+                  key={x.id}
+                  s={x}
+                  saved={false}
+                  back={`/minha-conta?busca=${encodeURIComponent(query)}#saloes`}
+                />
+              ))
           ))}
       </section>
 
-      {packages.length > 0 && (
+      {(packages.length > 0 || requests.length > 0) && (
         <section className="flex flex-col gap-3">
           <h2 className="text-xs font-semibold uppercase tracking-[0.2em] text-brand-700 dark:text-brand-300">
             Meus pacotes
           </h2>
-          {packages.map((p) => {
-            const expired = isExpired(p);
-            const left = p.items.reduce((n, i) => n + i.quantity - i.used, 0);
-            const off = p.status !== "active" || expired || left === 0;
-            return (
-              <Card key={p.id} className={`flex flex-col gap-3 ${off ? "opacity-60" : ""}`}>
-                <div className="flex items-start justify-between gap-3">
-                  <div className="min-w-0">
-                    <p className="font-semibold">{p.name}</p>
-                    <p className="text-xs text-stone-500">
-                      {p.salon_name}
-                      {p.expires_at
-                        ? ` · ${expired ? "venceu" : "use até"} ${formatLongDate(p.expires_at, "America/Sao_Paulo")}`
-                        : ""}
-                    </p>
-                  </div>
-                  <span className="shrink-0 rounded-full bg-brand-100 px-2.5 py-1 text-xs font-semibold text-brand-800 dark:bg-brand-950 dark:text-brand-200">
-                    {p.status !== "active" ? "Cancelado" : expired ? "Vencido" : `${left} restante(s)`}
-                  </span>
-                </div>
-                <ul className="flex flex-col gap-1.5 text-sm">
-                  {p.items.map((i) => (
-                    <li key={i.service} className="flex items-center justify-between gap-3">
-                      <span className="truncate">{i.service}</span>
-                      <span className="text-stone-500">
-                        {i.quantity - i.used} de {i.quantity}
-                      </span>
-                    </li>
-                  ))}
-                </ul>
-                {!off && (
-                  <Link
-                    href={`/${p.salon_slug}/agendar`}
-                    className="text-sm font-semibold text-brand-700 underline-offset-4 hover:underline dark:text-brand-300"
-                  >
-                    Agendar uma sessão ›
-                  </Link>
-                )}
-              </Card>
-            );
-          })}
+          <MyPackages packages={packages} requests={requests} showSalon={!slug} back={here} />
         </section>
       )}
 

@@ -67,6 +67,12 @@ export default async function PainelPage() {
         .gt("cancelled_at", new Date(Date.now() - 72 * 3_600_000).toISOString()),
     ]);
 
+  const { count: packageRequests } = await supabase
+    .from("package_requests")
+    .select("id", { count: "exact", head: true })
+    .eq("salon_id", salon.id)
+    .eq("status", "pending");
+
   const todayList = todayRows ?? [];
   const todayActive = todayList.filter((r) => r.status !== "cancelled");
   const expected = todayActive.filter((r) => r.status !== "no_show").reduce((s, r) => s + r.price_cents, 0);
@@ -123,6 +129,18 @@ export default async function PainelPage() {
           </>
         }
       />
+
+      {(packageRequests ?? 0) > 0 && (
+        <Link
+          href="/painel/pacotes#pedidos"
+          className="flex items-center justify-between gap-3 rounded-2xl border border-brand-300 bg-brand-50 px-4 py-3 text-sm font-medium text-brand-900 dark:border-brand-800 dark:bg-brand-950 dark:text-brand-100"
+        >
+          <span>
+            📦 {packageRequests} {packageRequests === 1 ? "pedido de pacote" : "pedidos de pacote"} pelo app esperando você
+          </span>
+          <span aria-hidden>›</span>
+        </Link>
+      )}
 
       {membership.role === "owner" && setup.some((s) => !s.done) && (
         <Card className="border-brand-200 bg-brand-50/60 dark:border-brand-900 dark:bg-brand-950/40">

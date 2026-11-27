@@ -3,7 +3,9 @@ import { formatPrice } from "@/lib/format";
 import { fullPrice, itemsLabel, validityLabel, type SalonPackage } from "@/lib/packages";
 import { centsToInput } from "@/lib/parse";
 import { requireSalon } from "@/lib/session";
-import { savePackage, togglePackage } from "./actions";
+import { handleRequest, savePackage, togglePackage } from "./actions";
+import { formatPhone, whatsappLink } from "@/lib/format";
+import { formatLongDate } from "@/lib/time";
 
 export const metadata = { title: "Pacotes | Agenda Salão" };
 
@@ -73,6 +75,21 @@ export default async function PacotesPage({ searchParams }: { searchParams: Prom
   const salonId = membership.salon.id;
   const isOwner = membership.role === "owner";
 
+  type Req = {
+    id: string;
+    created_at: string;
+    package: { name: string; price_cents: number } | null;
+    client: { id: string; name: string | null; phone: string } | null;
+  };
+  const { data: reqs } = await supabase
+    .from("package_requests")
+    .select("id, created_at, package:packages(name, price_cents), client:clients(id, name, phone)")
+    .eq("salon_id", salonId)
+    .eq("status", "pending")
+    .order("created_at")
+    .returns<Req[]>();
+  const requests = reqs ?? [];
+
   const [{ data: pkgs }, { data: svcs }, { data: sold }] = await Promise.all([
     supabase
       .from("packages")
@@ -105,7 +122,57 @@ export default async function PacotesPage({ searchParams }: { searchParams: Prom
         subtitle="Combos com desconto que aparecem na página do salão. A venda é registrada na ficha do cliente."
       />
       {erro && <Notice kind="error">{erro}</Notice>}
-      {ok && <Notice kind="success">Pacote salvo.</Notice>}
+      {ok && (
+        <Notice kind="success">
+          {ok === "venda" ? "Venda registrada. O pacote já aparece para o cliente." : ok === "recusado" ? "Pedido recusado." : "Pacote salvo."}
+        </Notice>
+      )}
+
+      {requests.length > 0 && (
+        <section id="pedidos" className="flex flex-col gap-3">
+          <h2 className="text-xs font-semibold uppercase tracking-[0.2em] text-brand-700 dark:text-brand-300">
+            Pedidos pelo app ({requests.length})
+          </h2>
+          {requests.map((r) => (
+            <Card key={r.id} className="flex flex-col gap-3 border-brand-200 dark:border-brand-900">
+              <div className="flex flex-wrap items-start justify-between gap-2">
+                <div className="min-w-0">
+                  <p className="font-semibold">{r.client?.name ?? "Cliente"} quer o pacote “{r.package?.name}”</p>
+                  <p className="text-xs text-stone-500">
+                    {r.client ? formatPhone(r.client.phone) : ""} · pedido em {formatLongDate(r.created_at, membership.salon.timezone)}
+                  </p>
+                </div>
+                <span className="font-display text-lg font-semibold">{formatPrice(r.package?.price_cents ?? 0)}</span>
+              </div>
+              <p className="text-xs text-stone-500">
+                Combine o pagamento com o cliente. Ao confirmar, o pacote entra na ficha dele e o saldo aparece no app.
+              </p>
+              <div className="flex flex-wrap gap-2">
+                <form action={handleRequest}>
+                  <input type="hidden" name="id" value={r.id} />
+                  <input type="hidden" name="accept" value="1" />
+                  <Button>Confirmar venda</Button>
+                </form>
+                {r.client && (
+                  <a
+                    href={whatsappLink(r.client.phone, `Olá, ${r.client.name ?? ""}! Recebemos seu pedido do pacote "${r.package?.name}".`)}
+                    target="_blank"
+                    rel="noreferrer"
+                    className="inline-flex items-center rounded-xl border border-stone-300 px-3.5 py-2 text-sm font-medium dark:border-stone-700"
+                  >
+                    WhatsApp
+                  </a>
+                )}
+                <form action={handleRequest}>
+                  <input type="hidden" name="id" value={r.id} />
+                  <input type="hidden" name="accept" value="0" />
+                  <GhostButton>Recusar</GhostButton>
+                </form>
+              </div>
+            </Card>
+          ))}
+        </section>
+      )}
 
       {isOwner && (
         <details open={list.length === 0} className="group rounded-2xl border border-stone-200/80 bg-white dark:border-stone-800 dark:bg-stone-900">

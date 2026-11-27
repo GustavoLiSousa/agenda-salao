@@ -1,6 +1,7 @@
 import Link from "next/link";
 import { Card } from "@/components/ui";
 import { whatsappLink } from "@/lib/format";
+import { toggleFavoriteSalon } from "./actions";
 
 export type SalonSummary = {
   id: string;
@@ -16,28 +17,32 @@ const small =
   "inline-flex items-center justify-center gap-1.5 rounded-xl border border-stone-200 px-3 py-2 text-xs font-medium text-stone-700 transition hover:border-stone-400 dark:border-stone-700 dark:text-stone-200";
 
 /** Um salão na área do cliente: agendar, ver a página, como chegar e WhatsApp. */
-export function SalonCard({ s }: { s: SalonSummary }) {
+export function SalonCard({ s, saved, back = "/minha-conta" }: { s: SalonSummary; saved: boolean; back?: string }) {
   return (
     <Card className="flex flex-col gap-3">
-      <div className="flex items-center gap-3">
-        {s.logo_url ? (
-          // eslint-disable-next-line @next/next/no-img-element
-          <img src={s.logo_url} alt="" className="h-12 w-12 shrink-0 rounded-xl object-cover" />
-        ) : (
-          <span className="flex h-12 w-12 shrink-0 items-center justify-center rounded-xl bg-brand-100 font-display text-xl font-semibold text-brand-800 dark:bg-brand-950 dark:text-brand-200">
-            {s.name.slice(0, 1).toUpperCase()}
-          </span>
-        )}
-        <div className="min-w-0">
-          <p className="truncate font-semibold">{s.name}</p>
-          {s.rating && s.rating.total > 0 && (
-            <p className="text-xs text-stone-500">
-              <span className="text-amber-500">★</span> {s.rating.average.toFixed(1).replace(".", ",")} ·{" "}
-              {s.rating.total} {s.rating.total === 1 ? "avaliação" : "avaliações"}
-            </p>
+      <div className="flex items-start gap-2">
+        <Link href={`/minha-conta/salao/${s.slug}`} className="flex min-w-0 flex-1 items-center gap-3">
+          {s.logo_url ? (
+            // eslint-disable-next-line @next/next/no-img-element
+            <img src={s.logo_url} alt="" className="h-12 w-12 shrink-0 rounded-xl object-cover" />
+          ) : (
+            <span className="flex h-12 w-12 shrink-0 items-center justify-center rounded-xl bg-brand-100 font-display text-xl font-semibold text-brand-800 dark:bg-brand-950 dark:text-brand-200">
+              {s.name.slice(0, 1).toUpperCase()}
+            </span>
           )}
-          {s.address && <p className="truncate text-xs text-stone-500">{s.address}</p>}
-        </div>
+          <div className="min-w-0">
+            <p className="truncate font-semibold">{s.name}</p>
+            {s.rating && s.rating.total > 0 && (
+              <p className="text-xs text-stone-500">
+                <span className="text-amber-500">★</span> {s.rating.average.toFixed(1).replace(".", ",")} ·{" "}
+                {s.rating.total} {s.rating.total === 1 ? "avaliação" : "avaliações"}
+              </p>
+            )}
+            {s.address && <p className="truncate text-xs text-stone-500">{s.address}</p>}
+            <p className="text-xs font-medium text-brand-700 dark:text-brand-300">Ver horários, pacotes e equipe ›</p>
+          </div>
+        </Link>
+        <FavoriteButton salonId={s.id} saved={saved} back={back} />
       </div>
       <Link
         href={`/${s.slug}/agendar`}
@@ -46,8 +51,8 @@ export function SalonCard({ s }: { s: SalonSummary }) {
         Agendar horário
       </Link>
       <div className="grid grid-cols-3 gap-2">
-        <Link href={`/${s.slug}`} className={small}>
-          Profissionais e avaliações
+        <Link href={`/minha-conta/salao/${s.slug}`} className={small}>
+          Ver salão
         </Link>
         {s.address ? (
           <a
@@ -70,5 +75,26 @@ export function SalonCard({ s }: { s: SalonSummary }) {
         )}
       </div>
     </Card>
+  );
+}
+
+export function FavoriteButton({ salonId, saved, back }: { salonId: string; saved: boolean; back: string }) {
+  return (
+    <form action={toggleFavoriteSalon} className="shrink-0">
+      <input type="hidden" name="salon_id" value={salonId} />
+      <input type="hidden" name="saved" value={saved ? "1" : "0"} />
+      <input type="hidden" name="back" value={back} />
+      <button
+        className={`flex flex-col items-center rounded-xl border px-2.5 py-1.5 text-[11px] font-medium transition ${
+          saved
+            ? "border-brand-300 bg-brand-50 text-brand-800 dark:border-brand-800 dark:bg-brand-950 dark:text-brand-200"
+            : "border-stone-200 text-stone-600 hover:border-stone-400 dark:border-stone-700 dark:text-stone-300"
+        }`}
+        aria-pressed={saved}
+      >
+        <span className="text-lg leading-none">{saved ? "♥" : "♡"}</span>
+        {saved ? "Meu salão" : "Salvar"}
+      </button>
+    </form>
   );
 }
