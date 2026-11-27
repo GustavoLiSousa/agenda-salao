@@ -117,10 +117,10 @@ grant execute on function public.salon_reviews(uuid, int) to anon, authenticated
 grant execute on function public.salon_rating_summary(uuid) to anon, authenticated;
 
 -- ---------------------------------------------------------------------
--- "Meus agendamentos" passa a saber quais atendimentos já foram avaliados
+-- "Meus agendamentos" passa a saber quais atendimentos já foram avaliados.
+-- Função nova (v2) para não precisar apagar a antiga.
 -- ---------------------------------------------------------------------
-drop function if exists public.my_appointments();
-create function public.my_appointments()
+create or replace function public.my_appointments_v2()
 returns table (
   manage_token uuid,
   status public.appointment_status,
@@ -153,5 +153,5 @@ language sql stable security definer set search_path = public as $$
    order by a.starts_at desc
    limit 300;
 $$;
-revoke execute on function public.my_appointments() from public, anon;
-grant execute on function public.my_appointments() to authenticated;
+revoke execute on function public.my_appointments_v2() from public, anon;
+grant execute on function public.my_appointments_v2() to authenticated;

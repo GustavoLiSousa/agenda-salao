@@ -38,7 +38,7 @@ export default async function MinhaContaPage({
   await claimTokens(supabase, [...(await readBookingTokens()), ...(vincular ? [vincular] : [])]);
 
   const [{ data }, { data: salon }] = await Promise.all([
-    supabase.rpc("my_appointments").returns<MyAppointment>(),
+    supabase.rpc("my_appointments_v2").returns<MyAppointment>(),
     slug
       ? supabase.from("salons").select("name, slug, logo_url").eq("slug", slug).maybeSingle<{ name: string; slug: string; logo_url: string | null }>()
       : Promise.resolve({ data: null }),
