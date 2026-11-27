@@ -8,7 +8,7 @@ import { can } from "@/lib/permissions";
 import { requireSalon } from "@/lib/session";
 import { addDays, dayKey, formatTime, isValidDay, shortDay, todayIn, weekdayOf, zonedToDate } from "@/lib/time";
 import type { AppointmentStatus } from "@/lib/types";
-import { buildTimeline, fromMin, minutesInDay, toMin, type Busy } from "@/lib/timeline";
+import { buildTimeline, fromMin, minutesInDay, toMin, type Busy, type Segment } from "@/lib/timeline";
 import { setStatus } from "./actions";
 
 export const metadata = { title: "Agenda | Agenda Salão" };
@@ -58,7 +58,7 @@ const NONE = "00000000-0000-0000-0000-000000000000";
 export default async function AgendaPage({
   searchParams,
 }: {
-  searchParams: Promise<{ view?: string; data?: string; prof?: string; erro?: string; ok?: string }>;
+  searchParams: Promise<{ view?: string; data?: string; prof?: string; ver?: string; erro?: string; ok?: string }>;
 }) {
   const q = await searchParams;
   const { supabase, membership } = await requireSalon();
@@ -72,12 +72,16 @@ export default async function AgendaPage({
   const showMoney = can(membership, "faturamento");
   const prof = onlyMine ? (membership.professional_id ?? NONE) : (q.prof ?? "");
   const mine = prof ? { professional_id: prof } : {};
+  // Filtro das vagas do dia: todas, só as livres ou só as ocupadas
+  const ver: "todas" | "livres" | "ocupadas" = q.ver === "livres" || q.ver === "ocupadas" ? q.ver : "todas";
 
-  const href = (p: Partial<{ data: string; prof: string; mes: boolean }>) => {
+  const href = (p: Partial<{ data: string; prof: string; mes: boolean; ver: string }>) => {
     const s = new URLSearchParams({ data: p.data ?? day });
     const pr = p.prof ?? prof;
     if (pr && !onlyMine) s.set("prof", pr);
     if (p.mes) s.set("view", "mes");
+    const v = p.ver ?? ver;
+    if (v !== "todas") s.set("ver", v);
     return `/painel/agenda?${s}`;
   };
   const returnTo = href({});
@@ -106,12 +110,12 @@ export default async function AgendaPage({
       .returns<Row[]>(),
     supabase
       .from("professionals")
-      .select("id, name, photo_url")
+      .select("id, name, photo_url, slot_step_min")
       .eq("salon_id", salon.id)
       .eq("active", true)
       .order("sort_order")
       .order("name")
-      .returns<{ id: string; name: string; photo_url: string | null }[]>(),
+      .returns<{ id: string; name: string; photo_url: string | null; slot_step_min: number | null }[]>(),
     supabase
       .from("appointments")
       .select("starts_at")
@@ -214,7 +218,7 @@ export default async function AgendaPage({
       {/* Quem: filtro por profissional */}
       {!onlyMine && (pros ?? []).length > 1 && (
         <div className="-mx-4 flex gap-2 overflow-x-auto px-4 pb-1 text-sm [scrollbar-width:none]">
-          {[{ id: "", name: "Toda a equipe", photo_url: null }, ...(pros ?? [])].map((p) => {
+          {[{ id: "", name: "Toda a equipe", photo_url: null, slot_step_min: null }, ...(pros ?? [])].map((p) => {
             const on = p.id === prof;
             return (
               <Link
@@ -337,6 +341,23 @@ export default async function AgendaPage({
             )}
           </div>
 
+          {/* Filtro: todas as vagas, só livres ou só ocupadas */}
+          <div className="grid grid-cols-3 gap-1 rounded-xl bg-stone-200 p-1 text-center text-sm font-medium dark:bg-stone-800">
+            {(["todas", "livres", "ocupadas"] as const).map((v) => (
+              <Link
+                key={v}
+                href={href({ ver: v })}
+                replace
+                scroll={false}
+                className={`rounded-lg py-1.5 transition ${
+                  v === ver ? "bg-white shadow dark:bg-stone-950" : "text-stone-600 dark:text-stone-400"
+                }`}
+              >
+                {v === "todas" ? "Todas" : v === "livres" ? "Livres" : "Ocupadas"}
+              </Link>
+            ))}
+          </div>
+
           {/* O dia de cada profissional */}
           <div className="flex flex-col gap-5">
             {shownPros.map((p) => {
@@ -362,9 +383,23 @@ export default async function AgendaPage({
                     ref: { reason: b.reason },
                   })),
               ];
+              // Cada vaga livre vira uma linha, no intervalo do profissional (padrão 30 min)
+              const step = p.slot_step_min && p.slot_step_min >= 5 ? p.slot_step_min : 30;
               const segs = buildTimeline(periods, busy)
-                .map((s) => (s.kind === "free" && s.start < nowMin ? { ...s, start: Math.ceil(nowMin / 15) * 15 } : s))
-                .filter((s) => s.kind !== "free" || s.end - s.start >= 15);
+                .flatMap((s): Segment<Ref>[] => {
+                  if (s.kind !== "free") return [s];
+                  const out: Segment<Ref>[] = [];
+                  for (let t = s.start; t < s.end; t += step) {
+                    if (t < nowMin) continue;
+                    out.push({ kind: "free", start: t, end: Math.min(t + step, s.end) });
+                  }
+                  return out;
+                })
+                .filter((s) => s.kind !== "free" || s.end - s.start >= 10);
+              const freeCount = segs.filter((s) => s.kind === "free").length;
+              const shown = segs.filter((s) =>
+                ver === "todas" ? true : ver === "livres" ? s.kind === "free" : s.kind !== "free",
+              );
               const cancelled = list.filter((r) => r.professional_id === p.id && r.status === "cancelled");
               const worked = periods.map((x) => `${fromMin(x.start)}–${fromMin(x.end)}`).join(" e ");
               const count = busy.filter((b) => b.kind === "appt").length;
@@ -373,20 +408,26 @@ export default async function AgendaPage({
               return (
                 <section key={p.id} className="flex flex-col gap-2">
                   {onlyMine ? (
-                    <p className="text-xs text-stone-500">{worked ? `Seu expediente: ${worked}` : "Folga neste dia"}</p>
+                    <p className="text-xs text-stone-500">
+                      {worked
+                        ? `Seu expediente: ${worked} · ${count} ocupado${count === 1 ? "" : "s"} · ${freeCount} livre${freeCount === 1 ? "" : "s"}`
+                        : "Folga neste dia"}
+                    </p>
                   ) : (
                     <div className="flex items-center gap-2.5">
                       <Avatar name={p.name} src={p.photo_url} size={32} />
                       <div className="min-w-0 flex-1">
                         <p className="font-semibold leading-tight">{p.name}</p>
                         <p className="text-xs text-stone-500">
-                          {worked ? `${count} horário${count === 1 ? "" : "s"} · ${worked}` : "Folga neste dia"}
+                          {worked
+                            ? `${count} ocupado${count === 1 ? "" : "s"} · ${freeCount} livre${freeCount === 1 ? "" : "s"} · ${worked}`
+                            : "Folga neste dia"}
                         </p>
                       </div>
                     </div>
                   )}
                   <ol className="flex flex-col gap-1.5">
-                    {segs.map((s) =>
+                    {shown.map((s) =>
                       s.kind === "appt" ? (
                         <AppointmentRow key={(s.ref as Row).id} r={s.ref as Row} {...rowProps} />
                       ) : s.kind === "block" ? (
@@ -409,19 +450,23 @@ export default async function AgendaPage({
                             className="flex items-center gap-3 rounded-xl border border-dashed border-stone-300 px-3 py-2 text-sm text-stone-500 transition hover:border-emerald-400 hover:bg-emerald-50 hover:text-emerald-800 dark:border-stone-700 dark:hover:border-emerald-800 dark:hover:bg-emerald-950/40 dark:hover:text-emerald-200"
                           >
                             <span className="w-12 font-mono tabular-nums">{fromMin(s.start)}</span>
-                            <span className="flex-1">Livre até {fromMin(s.end)}</span>
+                            <span className="flex-1">Livre</span>
                             <span className="font-semibold text-emerald-700 dark:text-emerald-300">+ Agendar</span>
                           </Link>
                         </li>
                       ),
                     )}
-                    {segs.length === 0 && (
+                    {shown.length === 0 && (
                       <li className="rounded-xl bg-stone-100 px-3 py-3 text-center text-sm text-stone-500 dark:bg-stone-900">
-                        {periods.length ? "Sem horários livres restantes." : "Não atende neste dia."}
+                        {!periods.length
+                          ? "Não atende neste dia."
+                          : ver === "ocupadas"
+                            ? "Nenhum horário ocupado."
+                            : "Sem vagas livres restantes."}
                       </li>
                     )}
                   </ol>
-                  {cancelled.length > 0 && (
+                  {cancelled.length > 0 && ver !== "livres" && (
                     <details className="text-sm">
                       <summary className="cursor-pointer list-none text-xs text-stone-500 hover:text-stone-800 dark:hover:text-stone-200">
                         {cancelled.length} desmarcado{cancelled.length === 1 ? "" : "s"} neste dia ›
