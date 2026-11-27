@@ -39,20 +39,20 @@ export function SalonCard({ s, saved, back = "/minha-conta" }: { s: SalonSummary
               </p>
             )}
             {s.address && <p className="truncate text-xs text-stone-500">{s.address}</p>}
-            <p className="text-xs font-medium text-brand-700 dark:text-brand-300">Ver horários, pacotes e equipe ›</p>
+            <p className="text-xs font-medium text-brand-700 dark:text-brand-300">Avaliações, pacotes e equipe ›</p>
           </div>
         </Link>
         <FavoriteButton salonId={s.id} saved={saved} back={back} />
       </div>
       <Link
-        href={`/${s.slug}/agendar`}
+        href={`/minha-conta/salao/${s.slug}`}
         className="rounded-xl bg-stone-900 px-4 py-3 text-center text-sm font-semibold text-white transition hover:bg-stone-800 dark:bg-stone-100 dark:text-stone-900"
       >
-        Agendar horário
+        Abrir salão
       </Link>
       <div className="grid grid-cols-3 gap-2">
-        <Link href={`/minha-conta/salao/${s.slug}`} className={small}>
-          Ver salão
+        <Link href={`/${s.slug}/agendar`} className={small}>
+          Agendar
         </Link>
         {s.address ? (
           <a

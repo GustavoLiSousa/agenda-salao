@@ -103,6 +103,7 @@ export default async function ClientSalonPage({ params }: { params: Promise<{ sl
     .filter((a) => a.status === "confirmed" && new Date(a.ends_at).getTime() > now)
     .sort((a, b) => a.starts_at.localeCompare(b.starts_at));
   const past = appts.filter((a) => !upcoming.includes(a)).slice(0, 10);
+  const toReview = appts.find((a) => a.status === "completed" && !a.reviewed);
   const myPackages = ((pkgMine ?? []) as unknown as MyPackage[]).filter((p) => p.salon_slug === slug);
   const requests = ((reqData ?? []) as unknown as MyPackageRequest[]).filter((r) => r.salon_slug === slug);
   const pendingIds = new Set(requests.filter((r) => r.status === "pending").map((r) => r.package_id));
@@ -182,6 +183,27 @@ export default async function ClientSalonPage({ params }: { params: Promise<{ sl
         </div>
       </div>
 
+      {/* Atalhos para o que tem no salão */}
+      <nav className="grid grid-cols-4 gap-2 text-center text-xs font-medium">
+        {[
+          { href: "#avaliar", icon: "★", label: "Avaliar" },
+          { href: "#pacotes", icon: "📦", label: "Pacotes", hide: packages.length === 0 },
+          { href: "#equipe", icon: "✂︎", label: "Equipe", hide: (pros ?? []).length === 0 },
+          { href: "#servicos", icon: "☰", label: "Serviços", hide: (services ?? []).length === 0 },
+        ]
+          .filter((x) => !x.hide)
+          .map((x) => (
+            <a
+              key={x.href}
+              href={x.href}
+              className="flex flex-col items-center gap-1 rounded-2xl border border-stone-200 bg-white py-3 transition hover:border-stone-400 dark:border-stone-800 dark:bg-stone-900"
+            >
+              <span className="text-lg leading-none text-brand-700 dark:text-brand-300">{x.icon}</span>
+              {x.label}
+            </a>
+          ))}
+      </nav>
+
       {/* Meus horários aqui */}
       <section className="flex flex-col gap-3">
         <h2 className={h2}>Meus horários aqui</h2>
@@ -248,7 +270,7 @@ export default async function ClientSalonPage({ params }: { params: Promise<{ sl
 
       {/* Pacotes do salão */}
       {packages.length > 0 && (
-        <section className="flex flex-col gap-3">
+        <section id="pacotes" className="flex scroll-mt-4 flex-col gap-3">
           <h2 className={h2}>Pacotes do salão</h2>
           {packages.map((p) => {
             const full = fullPrice(p.items);
@@ -282,7 +304,7 @@ export default async function ClientSalonPage({ params }: { params: Promise<{ sl
 
       {/* Equipe */}
       {(pros ?? []).length > 0 && (
-        <section className="flex flex-col gap-3">
+        <section id="equipe" className="flex scroll-mt-4 flex-col gap-3">
           <h2 className={h2}>Equipe</h2>
           <ul className="flex flex-col gap-2">
             {(pros ?? []).map((p) => {
@@ -314,7 +336,7 @@ export default async function ClientSalonPage({ params }: { params: Promise<{ sl
 
       {/* Serviços */}
       {(services ?? []).length > 0 && (
-        <section className="flex flex-col gap-3">
+        <section id="servicos" className="flex scroll-mt-4 flex-col gap-3">
           <h2 className={h2}>Serviços</h2>
           <ul className="divide-y divide-stone-100 rounded-2xl border border-stone-200/80 bg-white dark:divide-stone-800 dark:border-stone-800 dark:bg-stone-900">
             {(services ?? []).map((s) => (
@@ -336,9 +358,28 @@ export default async function ClientSalonPage({ params }: { params: Promise<{ sl
       )}
 
       {/* Avaliações */}
+      <section id="avaliar" className="flex scroll-mt-4 flex-col gap-3">
+        <h2 className={h2}>Avaliações</h2>
+        {toReview ? (
+          <Link
+            href={`/${slug}/agendamento/${toReview.manage_token}#avaliar`}
+            className="flex items-center gap-3 rounded-2xl border border-amber-300 bg-amber-50 p-4 text-sm dark:border-amber-900 dark:bg-amber-950"
+          >
+            <span className="text-2xl text-amber-500">★</span>
+            <span className="flex-1">
+              <b>Avalie seu atendimento</b>
+              <span className="block text-xs text-stone-500">
+                {toReview.service_name} com {toReview.professional_name}
+              </span>
+            </span>
+            <span aria-hidden>›</span>
+          </Link>
+        ) : (
+          <p className="text-sm text-stone-500">Depois de ser atendido aqui, você pode avaliar o salão e o profissional.</p>
+        )}
+      </section>
       {reviews.length > 0 && (
-        <section className="flex flex-col gap-3">
-          <h2 className={h2}>Avaliações</h2>
+        <section className="-mt-3 flex flex-col gap-3">
           {reviews.map((r) => (
             <Card key={r.id} className="flex flex-col gap-1.5 text-sm">
               <p>
