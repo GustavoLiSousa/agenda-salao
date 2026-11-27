@@ -6,8 +6,10 @@ export const dynamic = "force-dynamic";
 const NAV = [
   { href: "/painel", label: "Início" },
   { href: "/painel/agenda", label: "Agenda" },
+  { href: "/painel/clientes", label: "Clientes" },
   { href: "/painel/servicos", label: "Serviços" },
   { href: "/painel/profissionais", label: "Profissionais" },
+  { href: "/painel/configuracoes", label: "Ajustes" },
 ];
 
 export default function PainelLayout({ children }: { children: React.ReactNode }) {

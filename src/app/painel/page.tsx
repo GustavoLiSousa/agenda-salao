@@ -1,5 +1,6 @@
 import Link from "next/link";
 import { ShareLink } from "@/components/share-link";
+import { leadStatus, type ClientStats } from "@/lib/clients";
 import { requireSalon } from "@/lib/session";
 
 export const metadata = { title: "Painel | Agenda Salão" };
@@ -31,6 +32,7 @@ export default async function PainelPage() {
     { count: professionalsCount },
     { count: clientsCount },
     { count: freedCount },
+    { data: stats },
   ] = await Promise.all([
     supabase
       .from("appointments")
@@ -49,7 +51,12 @@ export default async function PainelPage() {
       .eq("status", "cancelled")
       .gt("starts_at", new Date().toISOString())
       .gt("cancelled_at", new Date(Date.now() - 72 * 3_600_000).toISOString()),
+    supabase.from("client_stats").select("*").eq("salon_id", salon.id).returns<ClientStats[]>(),
   ]);
+  const comeBack = (stats ?? []).filter((c) => {
+    const st = leadStatus(c, salon.inactive_after_days);
+    return st === "sumido" || st === "vencendo";
+  }).length;
 
   const firstName = (user.user_metadata?.full_name as string | undefined)?.split(" ")[0];
 
@@ -91,6 +98,15 @@ export default async function PainelPage() {
           className="rounded-xl border border-amber-300 bg-amber-50 p-3 text-sm dark:border-amber-900 dark:bg-amber-950"
         >
           <b>{freedCount} horário(s) liberado(s)</b> por clientes que desmarcaram. Toque para divulgar a vaga ›
+        </Link>
+      )}
+
+      {comeBack > 0 && (
+        <Link
+          href="/painel/clientes"
+          className="rounded-xl border border-red-300 bg-red-50 p-3 text-sm dark:border-red-900 dark:bg-red-950"
+        >
+          <b>{comeBack} cliente(s) para chamar de volta</b>: já passaram do tempo de voltar e não agendaram ›
         </Link>
       )}
 
