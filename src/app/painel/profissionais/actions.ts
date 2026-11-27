@@ -162,3 +162,35 @@ export async function removeTimeBlock(formData: FormData) {
   revalidatePath(`/painel/profissionais/${id}`);
   back(id, "ok=bloqueio");
 }
+
+/** Exclui o profissional. Se ele já tem atendimentos no histórico, arquiva (some de tudo, mas o histórico fica). */
+export async function deleteProfessional(formData: FormData) {
+  const { supabase, membership } = await requireSalon();
+  const id = String(formData.get("id"));
+  if (membership.role !== "owner") fail(id, "Só o dono do salão pode excluir profissionais.");
+
+  const { count: future } = await supabase
+    .from("appointments")
+    .select("id", { count: "exact", head: true })
+    .eq("professional_id", id)
+    .eq("status", "confirmed")
+    .gt("starts_at", new Date().toISOString());
+  if (future)
+    fail(id, `Ele ainda tem ${future} horário(s) marcado(s). Desmarque ou passe para outro profissional antes de excluir.`);
+
+  const { count: history } = await supabase
+    .from("appointments")
+    .select("id", { count: "exact", head: true })
+    .eq("professional_id", id);
+
+  const { error } = history
+    ? await supabase
+        .from("professionals")
+        .update({ active: false, archived_at: new Date().toISOString() })
+        .eq("id", id)
+    : await supabase.from("professionals").delete().eq("id", id);
+  if (error) fail(id, error.message);
+
+  revalidatePath("/painel/profissionais");
+  redirect("/painel/profissionais?ok=excluido");
+}

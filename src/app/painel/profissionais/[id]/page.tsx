@@ -6,7 +6,7 @@ import { WEEKDAYS } from "@/lib/parse";
 import { requireSalon } from "@/lib/session";
 import { formatDateTime } from "@/lib/time";
 import type { Professional, Service } from "@/lib/types";
-import { addTimeBlock, removeTimeBlock, saveProfessional, saveWorkingHours } from "../actions";
+import { addTimeBlock, deleteProfessional, removeTimeBlock, saveProfessional, saveWorkingHours } from "../actions";
 
 export const metadata = { title: "Profissional | Agenda Salão" };
 
@@ -222,6 +222,19 @@ export default async function ProfissionalPage({
           <Button className="self-start">Adicionar bloqueio</Button>
         </form>
       </Card>
+
+      {membership.role === "owner" && (
+        <Card className="flex flex-col gap-2 border-red-200 dark:border-red-900">
+          <h2 className="font-semibold text-red-700 dark:text-red-400">Excluir profissional</h2>
+          <p className="text-xs text-neutral-500">
+            Ele some do painel e do link do salão. Os atendimentos antigos continuam no histórico e nos relatórios.
+          </p>
+          <form action={deleteProfessional}>
+            <input type="hidden" name="id" value={pro.id} />
+            <GhostButton className="border-red-300 text-red-600 dark:border-red-900">Excluir {pro.name}</GhostButton>
+          </form>
+        </Card>
+      )}
     </main>
   );
 }

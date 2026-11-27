@@ -15,6 +15,7 @@ import {
   zonedToDate,
 } from "@/lib/time";
 import type { AppointmentStatus } from "@/lib/types";
+import { buildTimeline, fromMin, minutesInDay, toMin, type Busy } from "@/lib/timeline";
 import { setStatus } from "./actions";
 
 export const metadata = { title: "Agenda | Agenda Salão" };
@@ -111,6 +112,27 @@ export default async function AgendaPage({
       .limit(10)
       .returns<Row[]>(),
   ]);
+
+  // Expediente e bloqueios do dia (para mostrar as janelas livres de cada profissional)
+  const shownPros = (pros ?? []).filter((p) => !prof || p.id === prof);
+  const [{ data: hours }, { data: blocks }] =
+    view === "dia" && shownPros.length
+      ? await Promise.all([
+          supabase
+            .from("working_hours")
+            .select("professional_id, start_time, end_time")
+            .in("professional_id", shownPros.map((p) => p.id))
+            .eq("weekday", weekdayOf(day))
+            .returns<{ professional_id: string; start_time: string; end_time: string }[]>(),
+          supabase
+            .from("time_blocks")
+            .select("id, professional_id, starts_at, ends_at, reason")
+            .in("professional_id", shownPros.map((p) => p.id))
+            .lt("starts_at", zonedToDate(to, "00:00", tz).toISOString())
+            .gt("ends_at", zonedToDate(from, "00:00", tz).toISOString())
+            .returns<{ id: string; professional_id: string; starts_at: string; ends_at: string; reason: string | null }[]>(),
+        ])
+      : [{ data: [] }, { data: [] }];
 
   const list = rows ?? [];
   const active = list.filter((r) => r.status !== "cancelled");
@@ -216,15 +238,77 @@ export default async function AgendaPage({
       </div>
 
       {view === "dia" && (
-        list.length ? (
-          <ul className="flex flex-col gap-2">
-            {list.map((r) => (
-              <AppointmentCard key={r.id} r={r} tz={tz} returnTo={returnTo} salonName={salon.name} />
-            ))}
-          </ul>
-        ) : (
-          <p className="text-sm text-neutral-500">Nenhum horário neste dia.</p>
-        )
+        <div className="flex flex-col gap-4">
+          {shownPros.map((p) => {
+            type Ref = Row | { reason: string | null };
+            const periods = (hours ?? [])
+              .filter((h) => h.professional_id === p.id)
+              .map((h) => ({ start: toMin(h.start_time), end: toMin(h.end_time) }));
+            const busy: Busy<Ref>[] = [
+              ...list
+                .filter((r) => r.professional_id === p.id && r.status !== "cancelled")
+                .map((r) => ({ kind: "appt" as const, start: minutesInDay(r.starts_at, day, tz), end: minutesInDay(r.ends_at, day, tz), ref: r })),
+              ...(blocks ?? [])
+                .filter((b) => b.professional_id === p.id)
+                .map((b) => ({ kind: "block" as const, start: minutesInDay(b.starts_at, day, tz), end: minutesInDay(b.ends_at, day, tz), ref: { reason: b.reason } })),
+            ];
+            // horário livre que já passou não interessa
+            const nowMin = day === today ? minutesInDay(new Date().toISOString(), day, tz) : day < today ? 24 * 60 : 0;
+            const segs = buildTimeline(periods, busy)
+              .map((s) => (s.kind === "free" && s.start < nowMin ? { ...s, start: Math.ceil(nowMin / 15) * 15 } : s))
+              .filter((s) => s.kind !== "free" || s.end - s.start >= 15);
+            const cancelled = list.filter((r) => r.professional_id === p.id && r.status === "cancelled");
+            const worked = periods.map((x) => `${fromMin(x.start)}–${fromMin(x.end)}`).join(" e ");
+            return (
+              <section key={p.id} className="flex flex-col gap-2">
+                <div className="flex items-baseline justify-between gap-2">
+                  <h2 className="font-semibold">{p.name}</h2>
+                  <span className="text-xs text-neutral-500">{worked ? `Expediente ${worked}` : "Folga neste dia"}</span>
+                </div>
+                {segs.length === 0 && (
+                  <p className="text-sm text-neutral-500">{periods.length ? "Sem horários livres restantes." : "Não atende neste dia."}</p>
+                )}
+                <ul className="flex flex-col gap-2">
+                  {segs.map((s) =>
+                    s.kind === "appt" ? (
+                      <AppointmentCard key={(s.ref as Row).id} r={s.ref as Row} tz={tz} returnTo={returnTo} salonName={salon.name} />
+                    ) : s.kind === "block" ? (
+                      <li key={`b${s.start}`} className="rounded-xl border border-dashed border-neutral-300 px-4 py-3 text-sm text-neutral-500 dark:border-neutral-700">
+                        <span className="font-mono">{fromMin(s.start)}–{fromMin(Math.min(s.end, 1439))}</span> · Bloqueado
+                        {(s.ref as { reason: string | null }).reason ? ` (${(s.ref as { reason: string | null }).reason})` : ""}
+                      </li>
+                    ) : (
+                      <li key={`f${s.start}`}>
+                        <Link
+                          href={`/painel/agenda/novo?data=${day}&prof=${p.id}&hora=${fromMin(s.start)}`}
+                          className="flex items-center justify-between rounded-xl border border-emerald-200 bg-emerald-50 px-4 py-3 text-sm text-emerald-800 dark:border-emerald-900 dark:bg-emerald-950 dark:text-emerald-200"
+                        >
+                          <span>
+                            <span className="font-mono">{fromMin(s.start)}–{fromMin(s.end)}</span> · Livre
+                          </span>
+                          <span className="font-semibold">+ Agendar</span>
+                        </Link>
+                      </li>
+                    ),
+                  )}
+                  {cancelled.map((r) => (
+                    <AppointmentCard key={r.id} r={r} tz={tz} returnTo={returnTo} salonName={salon.name} />
+                  ))}
+                </ul>
+              </section>
+            );
+          })}
+          {/* horários de profissionais que não estão na lista (ex.: excluídos) */}
+          {list.filter((r) => !shownPros.some((p) => p.id === r.professional_id)).length > 0 && (
+            <ul className="flex flex-col gap-2">
+              {list
+                .filter((r) => !shownPros.some((p) => p.id === r.professional_id))
+                .map((r) => (
+                  <AppointmentCard key={r.id} r={r} tz={tz} returnTo={returnTo} salonName={salon.name} />
+                ))}
+            </ul>
+          )}
+        </div>
       )}
 
       {view === "semana" && (

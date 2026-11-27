@@ -9,14 +9,15 @@ export const metadata = { title: "Profissionais | Agenda Salão" };
 export default async function ProfissionaisPage({
   searchParams,
 }: {
-  searchParams: Promise<{ erro?: string }>;
+  searchParams: Promise<{ erro?: string; ok?: string }>;
 }) {
-  const { erro } = await searchParams;
+  const { erro, ok } = await searchParams;
   const { supabase, membership } = await requireSalon();
   const { data: pros } = await supabase
     .from("professionals")
     .select("*")
     .eq("salon_id", membership.salon.id)
+    .is("archived_at", null)
     .order("active", { ascending: false })
     .order("sort_order")
     .order("name")
@@ -26,6 +27,7 @@ export default async function ProfissionaisPage({
     <main className="flex flex-col gap-4">
       <h1 className="text-2xl font-bold">Profissionais</h1>
       {erro && <Notice kind="error">{erro}</Notice>}
+      {ok === "excluido" && <Notice kind="success">Profissional excluído.</Notice>}
 
       <Card>
         <form action={createProfessional} className="flex flex-col gap-3 sm:flex-row sm:items-end">

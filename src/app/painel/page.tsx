@@ -41,8 +41,8 @@ export default async function PainelPage() {
       .eq("status", "confirmed")
       .gte("starts_at", today.from)
       .lt("starts_at", today.to),
-    supabase.from("services").select("id", { count: "exact", head: true }).eq("salon_id", salon.id),
-    supabase.from("professionals").select("id", { count: "exact", head: true }).eq("salon_id", salon.id),
+    supabase.from("services").select("id", { count: "exact", head: true }).eq("salon_id", salon.id).is("archived_at", null),
+    supabase.from("professionals").select("id", { count: "exact", head: true }).eq("salon_id", salon.id).is("archived_at", null),
     supabase.from("clients").select("id", { count: "exact", head: true }).eq("salon_id", salon.id),
     supabase
       .from("appointments")
