@@ -9,7 +9,7 @@ export const metadata = { title: "Agendar | Agenda Salão" };
 export default async function NovoAgendamentoPage({
   searchParams,
 }: {
-  searchParams: Promise<{ data?: string; prof?: string }>;
+  searchParams: Promise<{ data?: string; prof?: string; hora?: string }>;
 }) {
   const q = await searchParams;
   const { supabase, membership } = await requireSalon();
@@ -42,6 +42,7 @@ export default async function NovoAgendamentoPage({
           services={services ?? []}
           links={links ?? []}
           initialProfessional={q.prof ?? ""}
+          initialTime={/^\d{2}:\d{2}$/.test(q.hora ?? "") ? q.hora : ""}
         />
       </Card>
     </main>

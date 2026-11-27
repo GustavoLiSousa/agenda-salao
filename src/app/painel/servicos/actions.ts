@@ -65,3 +65,34 @@ export async function toggleService(formData: FormData) {
   if (error) fail(error.message);
   revalidatePath("/painel/servicos");
 }
+
+/** Exclui o serviço. Se já foi usado em atendimentos, arquiva (o histórico continua certo). */
+export async function deleteService(formData: FormData) {
+  const { supabase, membership } = await requireSalon();
+  const id = String(formData.get("id"));
+  if (membership.role !== "owner") fail("Só o dono do salão pode excluir serviços.");
+
+  const { count: future } = await supabase
+    .from("appointments")
+    .select("id", { count: "exact", head: true })
+    .eq("service_id", id)
+    .eq("status", "confirmed")
+    .gt("starts_at", new Date().toISOString());
+  if (future) fail(`Este serviço tem ${future} horário(s) marcado(s). Desmarque antes de excluir, ou só pause.`);
+
+  const { count: history } = await supabase
+    .from("appointments")
+    .select("id", { count: "exact", head: true })
+    .eq("service_id", id);
+
+  const { error } = history
+    ? await supabase
+        .from("services")
+        .update({ active: false, archived_at: new Date().toISOString() })
+        .eq("id", id)
+    : await supabase.from("services").delete().eq("id", id);
+  if (error) fail(error.message);
+
+  revalidatePath("/painel/servicos");
+  redirect("/painel/servicos?ok=excluido");
+}

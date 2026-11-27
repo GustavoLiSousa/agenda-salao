@@ -13,15 +13,16 @@ type Props = {
   services: { id: string; name: string }[];
   links: { professional_id: string; service_id: string }[];
   initialProfessional: string;
+  initialTime?: string;
 };
 
-export function StaffBookingForm({ tz, day: initialDay, professionals, services, links, initialProfessional }: Props) {
+export function StaffBookingForm({ tz, day: initialDay, professionals, services, links, initialProfessional, initialTime }: Props) {
   const [state, action, pending] = useActionState<StaffBookState, FormData>(bookByStaff, {});
   const [pro, setPro] = useState(initialProfessional || professionals[0]?.id || "");
   const servicesForPro = services.filter((s) => links.some((l) => l.professional_id === pro && l.service_id === s.id));
   const [service, setService] = useState(servicesForPro[0]?.id ?? "");
   const [day, setDay] = useState(initialDay);
-  const [time, setTime] = useState("");
+  const [time, setTime] = useState(initialTime ?? "");
   const [free, setFree] = useState<string[] | null>(null);
 
   useEffect(() => {

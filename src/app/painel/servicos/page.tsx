@@ -3,7 +3,7 @@ import { formatDuration, formatPrice } from "@/lib/format";
 import { centsToInput } from "@/lib/parse";
 import { requireSalon } from "@/lib/session";
 import type { Service } from "@/lib/types";
-import { saveService, toggleService } from "./actions";
+import { deleteService, saveService, toggleService } from "./actions";
 
 export const metadata = { title: "Serviços | Agenda Salão" };
 
@@ -72,6 +72,7 @@ export default async function ServicosPage({
     .from("services")
     .select("*")
     .eq("salon_id", membership.salon.id)
+    .is("archived_at", null)
     .order("active", { ascending: false })
     .order("sort_order")
     .order("name")
@@ -81,7 +82,7 @@ export default async function ServicosPage({
     <main className="flex flex-col gap-4">
       <h1 className="text-2xl font-bold">Serviços</h1>
       {erro && <Notice kind="error">{erro}</Notice>}
-      {ok && <Notice>Serviço salvo.</Notice>}
+      {ok && <Notice kind="success">{ok === "excluido" ? "Serviço excluído." : "Serviço salvo."}</Notice>}
 
       <Card>
         <h2 className="mb-3 font-semibold">Novo serviço</h2>
@@ -112,6 +113,10 @@ export default async function ServicosPage({
                     <input type="hidden" name="id" value={s.id} />
                     <input type="hidden" name="active" value={String(s.active)} />
                     <GhostButton>{s.active ? "Pausar (some do link do cliente)" : "Reativar"}</GhostButton>
+                  </form>
+                  <form action={deleteService}>
+                    <input type="hidden" name="id" value={s.id} />
+                    <GhostButton className="border-red-300 text-red-600 dark:border-red-900">Excluir serviço</GhostButton>
                   </form>
                 </div>
               </details>

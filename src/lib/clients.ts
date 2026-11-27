@@ -15,7 +15,11 @@ export type ClientStats = {
   no_shows: number;
   return_every_days: number | null;
   return_every_days_fixed: boolean;
+  /** de onde veio o retorno: combinado com o cliente, do último serviço ou média das visitas */
+  return_source: "cliente" | "servico" | "media" | null;
 };
+
+export const RETURN_SOURCE_LABEL = { cliente: "combinado", servico: "pelo serviço", media: "média das visitas" } as const;
 
 export type LeadStatus = "agendado" | "sumido" | "vencendo" | "em_dia" | "sem_visita";
 

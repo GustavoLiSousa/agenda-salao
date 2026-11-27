@@ -127,8 +127,8 @@ export default async function ClientePage({
             min={1}
             max={365}
             defaultValue={raw?.return_every_days ?? ""}
-            placeholder={c.return_every_days ? `média: ${c.return_every_days}` : "7, 15, 30..."}
-            hint="Vazio = usa a média das visitas."
+            placeholder={c.return_every_days ? String(c.return_every_days) : "7, 15, 30..."}
+            hint="Vazio = usa o retorno do serviço ou a média das visitas."
           />
           <label className="flex items-center gap-2 self-end text-sm">
             <input type="checkbox" name="accepts_marketing" defaultChecked={c.accepts_marketing} /> Aceita receber mensagens
