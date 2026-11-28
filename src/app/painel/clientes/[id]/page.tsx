@@ -1,3 +1,4 @@
+import Link from "next/link";
 import { notFound } from "next/navigation";
 import { Avatar, Badge, Button, Card, Field, LinkButton, Notice, PageHeader, Stat } from "@/components/ui";
 import { daysSince, LEAD_LABEL, leadStatus, RETURN_SOURCE_LABEL, type ClientStats } from "@/lib/clients";
@@ -52,7 +53,7 @@ export default async function ClientePage({
   searchParams,
 }: {
   params: Promise<{ id: string }>;
-  searchParams: Promise<{ ok?: string; erro?: string }>;
+  searchParams: Promise<{ ok?: string; erro?: string; aba?: string }>;
 }) {
   const { id } = await params;
   const q = await searchParams;
@@ -94,6 +95,29 @@ export default async function ClientePage({
   const stamps = loyalty ? c.visits % loyalty : 0;
   const rewardsEarned = loyalty ? Math.floor(c.visits / loyalty) : 0;
   const fixed = c.return_source === "cliente" ? c.return_every_days : null;
+  // Fidelidade só vale para quem não tem pacote ativo
+  const nowIso = new Date().toISOString();
+  const activePackage = (owned ?? []).find(
+    (p) =>
+      p.status === "active" && (!p.expires_at || p.expires_at > nowIso) && p.items.some((i) => i.used < i.quantity),
+  );
+  const TABS = [
+    { key: "retorno", label: "Retorno" },
+    { key: "pacotes", label: "Pacotes" },
+    ...(loyalty ? [{ key: "fidelidade", label: "Fidelidade" }] : []),
+    { key: "historico", label: "Histórico" },
+    { key: "dados", label: "Dados" },
+  ];
+  const okTab: Record<string, string> = {
+    "1": "dados",
+    retorno: "retorno",
+    pacote: "pacotes",
+    uso: "pacotes",
+    desfeito: "pacotes",
+    cancelado: "pacotes",
+  };
+  const tab = TABS.some((t) => t.key === q.aba) ? q.aba! : (q.ok && okTab[q.ok]) || "retorno";
+  const tabHref = (k: string) => `/painel/clientes/${c.client_id}?aba=${k}`;
   const nextReturn =
     c.last_visit_at && c.return_every_days ? addDays(dayKey(c.last_visit_at, tz), c.return_every_days) : null;
 
@@ -120,7 +144,10 @@ export default async function ClientePage({
         >
           WhatsApp
         </a>
-        <LinkButton variant="secondary" href={`/painel/agenda/novo?nome=${encodeURIComponent(c.name ?? "")}&tel=${c.phone}`}>
+        <LinkButton
+          variant="secondary"
+          href={`/painel/agenda/novo?nome=${encodeURIComponent(c.name ?? "")}&tel=${c.phone}`}
+        >
           Agendar horário
         </LinkButton>
       </div>
@@ -139,53 +166,82 @@ export default async function ClientePage({
         />
       </div>
 
-      <Card className="flex flex-col gap-3">
-        <div>
-          <h2 className="font-display text-lg font-semibold">De quanto em quanto tempo volta</h2>
-          <p className="text-sm text-stone-500">
-            {c.return_every_days
-              ? `A cada ${c.return_every_days} dias (${RETURN_SOURCE_LABEL[c.return_source ?? "media"]}).`
-              : `Ainda sem regra: usa ${salon.inactive_after_days} dias do salão.`}
-            {nextReturn
-              ? nextReturn < todayIn(tz)
-                ? ` Era para ter voltado em ${shortDay(nextReturn)}.`
-                : ` Deve voltar por volta de ${shortDay(nextReturn)}.`
-              : ""}
-          </p>
-        </div>
-        <div className="flex flex-wrap gap-2">
-          {RETURN_CHOICES.map((d) => (
-            <form key={d} action={setReturnDays}>
-              <input type="hidden" name="id" value={c.client_id} />
-              <input type="hidden" name="days" value={d} />
-              <button className={chip(fixed === d)}>{d} dias</button>
-            </form>
-          ))}
-          <form action={setReturnDays}>
-            <input type="hidden" name="id" value={c.client_id} />
-            <input type="hidden" name="days" value="" />
-            <button className={chip(fixed === null)}>Automático</button>
-          </form>
-        </div>
-        <form action={setReturnDays} className="flex items-end gap-2">
-          <input type="hidden" name="id" value={c.client_id} />
-          <div className="w-32">
-            <Field label="Outro (dias)" name="days" type="number" min={1} max={365} defaultValue={fixed && !RETURN_CHOICES.includes(fixed) ? fixed : ""} />
+      <nav className="sticky top-[57px] z-10 -mx-4 flex gap-1 overflow-x-auto border-b border-stone-200 bg-[var(--background)]/95 px-4 backdrop-blur dark:border-stone-800">
+        {TABS.map((t) => (
+          <Link
+            key={t.key}
+            href={tabHref(t.key)}
+            replace
+            scroll={false}
+            className={`shrink-0 border-b-2 px-3 py-2.5 text-sm font-medium transition ${
+              tab === t.key
+                ? "border-fuchsia-600 text-stone-900 dark:border-fuchsia-400 dark:text-white"
+                : "border-transparent text-stone-500 hover:text-stone-800 dark:hover:text-stone-200"
+            }`}
+          >
+            {t.label}
+          </Link>
+        ))}
+      </nav>
+
+      {tab === "retorno" && (
+        <Card className="flex flex-col gap-3">
+          <div>
+            <h2 className="font-display text-lg font-semibold">De quanto em quanto tempo volta</h2>
+            <p className="text-sm text-stone-500">
+              {c.return_every_days
+                ? `A cada ${c.return_every_days} dias (${RETURN_SOURCE_LABEL[c.return_source ?? "media"]}).`
+                : `Ainda sem regra: usa ${salon.inactive_after_days} dias do salão.`}
+              {nextReturn
+                ? nextReturn < todayIn(tz)
+                  ? ` Era para ter voltado em ${shortDay(nextReturn)}.`
+                  : ` Deve voltar por volta de ${shortDay(nextReturn)}.`
+                : ""}
+            </p>
           </div>
-          <Button className="py-2 text-sm">Usar</Button>
-        </form>
-        <p className="text-xs text-stone-400">Automático = usa o retorno do último serviço ou a média das visitas.</p>
-      </Card>
+          <div className="flex flex-wrap gap-2">
+            {RETURN_CHOICES.map((d) => (
+              <form key={d} action={setReturnDays}>
+                <input type="hidden" name="id" value={c.client_id} />
+                <input type="hidden" name="days" value={d} />
+                <button className={chip(fixed === d)}>{d} dias</button>
+              </form>
+            ))}
+            <form action={setReturnDays}>
+              <input type="hidden" name="id" value={c.client_id} />
+              <input type="hidden" name="days" value="" />
+              <button className={chip(fixed === null)}>Automático</button>
+            </form>
+          </div>
+          <form action={setReturnDays} className="flex items-end gap-2">
+            <input type="hidden" name="id" value={c.client_id} />
+            <div className="w-32">
+              <Field
+                label="Outro (dias)"
+                name="days"
+                type="number"
+                min={1}
+                max={365}
+                defaultValue={fixed && !RETURN_CHOICES.includes(fixed) ? fixed : ""}
+              />
+            </div>
+            <Button className="py-2 text-sm">Usar</Button>
+          </form>
+          <p className="text-xs text-stone-400">Automático = usa o retorno do último serviço ou a média das visitas.</p>
+        </Card>
+      )}
 
-      <PackagesCard
-        clientId={c.client_id}
-        owned={owned ?? []}
-        offers={(offers ?? []).filter((p) => p.items.length > 0)}
-        tz={tz}
-        isOwner={membership.role === "owner"}
-      />
+      {tab === "pacotes" && (
+        <PackagesCard
+          clientId={c.client_id}
+          owned={owned ?? []}
+          offers={(offers ?? []).filter((p) => p.items.length > 0)}
+          tz={tz}
+          isOwner={membership.role === "owner"}
+        />
+      )}
 
-      {loyalty && (
+      {tab === "fidelidade" && loyalty && (
         <Card>
           <div className="flex items-baseline justify-between">
             <h2 className="font-display text-lg font-semibold">Cartão fidelidade</h2>
@@ -193,12 +249,20 @@ export default async function ClientePage({
               {stamps}/{loyalty}
             </span>
           </div>
-          <div className="mt-3 flex flex-wrap gap-2">
+          {activePackage && (
+            <p className="mt-3 rounded-xl border border-amber-200 bg-amber-50 px-3 py-2 text-sm text-amber-900 dark:border-amber-900 dark:bg-amber-950 dark:text-amber-200">
+              Este cliente tem o pacote <b>{activePackage.name}</b> ativo. A fidelidade só vale para quem não tem
+              pacote, então o benefício fica pausado enquanto o pacote durar.
+            </p>
+          )}
+          <div className={`mt-3 flex flex-wrap gap-2 ${activePackage ? "opacity-40 grayscale" : ""}`}>
             {Array.from({ length: loyalty }, (_, i) => (
               <span
                 key={i}
                 className={`flex h-9 w-9 items-center justify-center rounded-full border text-xs ${
-                  i < stamps ? "border-brand-500 bg-brand-500 text-white" : "border-dashed border-stone-300 text-stone-400 dark:border-stone-700"
+                  i < stamps
+                    ? "border-brand-500 bg-brand-500 text-white"
+                    : "border-dashed border-stone-300 text-stone-400 dark:border-stone-700"
                 }`}
               >
                 {i < stamps ? "✓" : i + 1}
@@ -212,51 +276,67 @@ export default async function ClientePage({
         </Card>
       )}
 
-      <Card>
-        <h2 className="mb-3 font-display text-lg font-semibold">Dados</h2>
-        <form action={saveClient} className="grid gap-3 sm:grid-cols-2">
-          <input type="hidden" name="id" value={c.client_id} />
-          <input type="hidden" name="return_every_days" value={fixed ?? ""} />
-          <Field label="Nome" name="name" defaultValue={c.name ?? ""} />
-          <Field label="Aniversário" name="birthday" type="date" defaultValue={c.birthday ?? ""} />
-          <div className="sm:col-span-2">
-            <Field label="Observações" name="notes" defaultValue={c.notes ?? ""} placeholder="Prefere máquina 2, alergia..." />
-          </div>
-          <label className="flex items-center gap-2 text-sm sm:col-span-2">
-            <input type="checkbox" name="accepts_marketing" defaultChecked={c.accepts_marketing} className="h-4 w-4 accent-stone-900" />
-            Aceita receber mensagens e promoções
-          </label>
-          <Button className="sm:col-span-2 sm:justify-self-start">Salvar dados</Button>
-        </form>
-      </Card>
+      {tab === "dados" && (
+        <Card>
+          <h2 className="mb-3 font-display text-lg font-semibold">Dados</h2>
+          <form action={saveClient} className="grid gap-3 sm:grid-cols-2">
+            <input type="hidden" name="id" value={c.client_id} />
+            <input type="hidden" name="return_every_days" value={fixed ?? ""} />
+            <Field label="Nome" name="name" defaultValue={c.name ?? ""} />
+            <Field label="Aniversário" name="birthday" type="date" defaultValue={c.birthday ?? ""} />
+            <div className="sm:col-span-2">
+              <Field
+                label="Observações"
+                name="notes"
+                defaultValue={c.notes ?? ""}
+                placeholder="Prefere máquina 2, alergia..."
+              />
+            </div>
+            <label className="flex items-center gap-2 text-sm sm:col-span-2">
+              <input
+                type="checkbox"
+                name="accepts_marketing"
+                defaultChecked={c.accepts_marketing}
+                className="h-4 w-4 accent-stone-900"
+              />
+              Aceita receber mensagens e promoções
+            </label>
+            <Button className="sm:col-span-2 sm:justify-self-start">Salvar dados</Button>
+          </form>
+        </Card>
+      )}
 
-      <Card className="p-0">
-        <h2 className="border-b border-stone-100 px-4 py-3 font-display text-lg font-semibold sm:px-5 dark:border-stone-800">Histórico</h2>
-        {hist?.length ? (
-          <ul className="divide-y divide-stone-100 dark:divide-stone-800">
-            {hist.map((h) => (
-              <li key={h.id} className="flex items-center gap-3 px-4 py-3 text-sm sm:px-5">
-                <div className="w-20 shrink-0">
-                  <p className="font-medium first-letter:uppercase">{shortDay(dayKey(h.starts_at, tz))}</p>
-                  <p className="text-xs text-stone-500">{formatTime(h.starts_at, tz)}</p>
-                </div>
-                <div className="min-w-0 flex-1">
-                  <p className="truncate">{h.service?.name}</p>
-                  <p className="truncate text-xs text-stone-500">com {h.professional?.name}</p>
-                </div>
-                <div className="flex flex-col items-end gap-1">
-                  <Badge className={STATUS[h.status].cls}>{STATUS[h.status].label}</Badge>
-                  {can(membership, "faturamento") && (
-                    <span className="text-xs text-stone-500">{formatPrice(h.price_cents)}</span>
-                  )}
-                </div>
-              </li>
-            ))}
-          </ul>
-        ) : (
-          <p className="px-4 py-6 text-sm text-stone-500 sm:px-5">Sem agendamentos.</p>
-        )}
-      </Card>
+      {tab === "historico" && (
+        <Card className="p-0">
+          <h2 className="border-b border-stone-100 px-4 py-3 font-display text-lg font-semibold sm:px-5 dark:border-stone-800">
+            Histórico
+          </h2>
+          {hist?.length ? (
+            <ul className="divide-y divide-stone-100 dark:divide-stone-800">
+              {hist.map((h) => (
+                <li key={h.id} className="flex items-center gap-3 px-4 py-3 text-sm sm:px-5">
+                  <div className="w-20 shrink-0">
+                    <p className="font-medium first-letter:uppercase">{shortDay(dayKey(h.starts_at, tz))}</p>
+                    <p className="text-xs text-stone-500">{formatTime(h.starts_at, tz)}</p>
+                  </div>
+                  <div className="min-w-0 flex-1">
+                    <p className="truncate">{h.service?.name}</p>
+                    <p className="truncate text-xs text-stone-500">com {h.professional?.name}</p>
+                  </div>
+                  <div className="flex flex-col items-end gap-1">
+                    <Badge className={STATUS[h.status].cls}>{STATUS[h.status].label}</Badge>
+                    {can(membership, "faturamento") && (
+                      <span className="text-xs text-stone-500">{formatPrice(h.price_cents)}</span>
+                    )}
+                  </div>
+                </li>
+              ))}
+            </ul>
+          ) : (
+            <p className="px-4 py-6 text-sm text-stone-500 sm:px-5">Sem agendamentos.</p>
+          )}
+        </Card>
+      )}
     </main>
   );
 }

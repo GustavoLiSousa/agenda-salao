@@ -11,7 +11,8 @@ export async function saveClient(formData: FormData) {
   const back = (p: string): never => redirect(`/painel/clientes/${id}?${p}`);
 
   const ret = parseIntOrNull(formData.get("return_every_days"));
-  if (ret !== null && (ret < 1 || ret > 365)) back("erro=" + encodeURIComponent("Frequência deve ser entre 1 e 365 dias."));
+  if (ret !== null && (ret < 1 || ret > 365))
+    back("erro=" + encodeURIComponent("Frequência deve ser entre 1 e 365 dias."));
   const birthday = String(formData.get("birthday") ?? "") || null;
 
   const { error } = await supabase
@@ -74,7 +75,7 @@ export async function setReturnDays(formData: FormData) {
 // Pacotes do cliente
 // ---------------------------------------------------------------------
 function backToClient(clientId: string, q: string): never {
-  redirect(`/painel/clientes/${clientId}?${q}#pacotes`);
+  redirect(`/painel/clientes/${clientId}?aba=pacotes&${q}`);
 }
 
 export async function sellPackage(formData: FormData) {
@@ -127,7 +128,8 @@ export async function undoPackageUse(formData: FormData) {
 export async function cancelClientPackage(formData: FormData) {
   const { supabase, membership } = await requireSalon();
   const clientId = String(formData.get("client_id"));
-  if (membership.role !== "owner") backToClient(clientId, "erro=" + encodeURIComponent("Só o dono pode cancelar um pacote vendido."));
+  if (membership.role !== "owner")
+    backToClient(clientId, "erro=" + encodeURIComponent("Só o dono pode cancelar um pacote vendido."));
   const { error } = await supabase
     .from("client_packages")
     .update({ status: "cancelled" })
