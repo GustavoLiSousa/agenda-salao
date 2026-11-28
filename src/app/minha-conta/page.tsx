@@ -11,12 +11,13 @@ import {
 import { formatPrice, whatsappLink } from "@/lib/format";
 import { createClient, isSupabaseConfigured } from "@/lib/supabase/server";
 import { formatLongDate, formatTime } from "@/lib/time";
+import { Icon } from "@/components/icons";
 import { clientSignOut } from "./actions";
 import { SalonCard, type SalonSummary } from "./salon-card";
 import { MyPackages } from "./my-packages";
 
 export const dynamic = "force-dynamic";
-export const metadata = { title: "Meus agendamentos", robots: { index: false } };
+export const metadata = { title: "Central do cliente", robots: { index: false } };
 
 const STATUS: Record<MyAppointment["status"], { label: string; className: string }> = {
   confirmed: {
@@ -48,6 +49,7 @@ export default async function MinhaContaPage({
   } = await supabase.auth.getUser();
   if (!user) redirect(`/minha-conta/entrar?next=${encodeURIComponent(here)}`);
 
+  const meta = (user.user_metadata ?? {}) as Record<string, string | undefined>;
   // horários marcados neste aparelho antes de entrar passam a ser da conta
   // (e o do link aberto, quando veio da página de um agendamento)
   await claimTokens(supabase, [...(await readBookingTokens()), ...(vincular ? [vincular] : [])]);
@@ -123,31 +125,96 @@ export default async function MinhaContaPage({
 
   return (
     <main className="mx-auto flex min-h-screen max-w-md flex-col gap-6 px-5 py-6 pb-16">
-      <div className="flex items-center justify-between gap-3">
-        {salon ? (
+      <section className="relative isolate -mx-5 -mt-6 overflow-hidden px-5 pb-5 pt-6 text-white">
+        <div className="absolute inset-0 -z-10 bg-[radial-gradient(90%_140%_at_100%_0%,#c026d3_0%,transparent_55%),radial-gradient(80%_120%_at_0%_100%,#f97316_0%,transparent_60%),linear-gradient(135deg,#1e1033,#3b0d3f)]" />
+        <div className="flex items-center justify-between gap-3">
+          {salon ? (
+            <Link href={`/${salon.slug}`} className="text-sm text-white/75 hover:text-white">
+              ‹ {salon.name}
+            </Link>
+          ) : (
+            <span className="text-[11px] font-semibold uppercase tracking-[0.25em] text-white/70">Agenda Salão</span>
+          )}
+          <form action={clientSignOut}>
+            <input type="hidden" name="back" value={slug ? `/${slug}` : "/minha-conta/entrar"} />
+            <button className="text-sm text-white/75 underline-offset-4 hover:underline">Sair</button>
+          </form>
+        </div>
+        <div className="mt-4 flex items-center gap-3">
+          {meta.avatar_url ? (
+            // eslint-disable-next-line @next/next/no-img-element
+            <img src={meta.avatar_url} alt="" className="h-14 w-14 rounded-full object-cover ring-2 ring-white/50" />
+          ) : (
+            <span className="flex h-14 w-14 items-center justify-center rounded-full bg-white/15 ring-2 ring-white/40">
+              <Icon name="user" size={26} />
+            </span>
+          )}
+          <div className="min-w-0 flex-1">
+            <h1 className="font-display text-2xl font-semibold leading-tight">Central do cliente</h1>
+            <p className="truncate text-sm text-white/75">{meta.full_name ?? meta.name ?? user.email}</p>
+          </div>
           <Link
-            href={`/${salon.slug}`}
-            className="text-sm text-stone-500 hover:text-stone-900 dark:hover:text-stone-100"
+            href="/minha-conta/perfil"
+            className="shrink-0 rounded-xl bg-white/15 px-3 py-2 text-xs font-semibold ring-1 ring-white/30 hover:bg-white/25"
           >
-            ‹ {salon.name}
+            Editar perfil
           </Link>
-        ) : (
-          <span />
-        )}
-        <form action={clientSignOut}>
-          <input type="hidden" name="back" value={slug ? `/${slug}` : "/minha-conta/entrar"} />
-          <button className="text-sm text-stone-500 underline-offset-4 hover:underline">Sair</button>
-        </form>
-      </div>
+        </div>
+        <div className="mt-4">
+          <form action="/minha-conta#busca" className="flex gap-2">
+            {slug && <input type="hidden" name="salao" value={slug} />}
+            <input
+              name="busca"
+              defaultValue={query}
+              placeholder="Buscar barbearia, salão ou estúdio"
+              minLength={2}
+              className="min-w-0 flex-1 rounded-xl border border-white/20 bg-white/95 px-3.5 py-2.5 text-base text-stone-900 outline-none focus:ring-4 focus:ring-white/30"
+            />
+            <button
+              className="flex items-center rounded-xl bg-white/15 px-3.5 text-white ring-1 ring-white/30 hover:bg-white/25"
+              aria-label="Buscar"
+            >
+              <Icon name="search" size={20} />
+            </button>
+          </form>
+        </div>
+      </section>
 
-      <div>
-        <h1 className="font-display text-3xl font-semibold">Meus agendamentos</h1>
-        <p className="mt-1 truncate text-sm text-stone-500">{user.email}</p>
-      </div>
+      {foundSalons && (
+        <section className="flex flex-col gap-3" id="busca">
+          <h2 className="text-xs font-semibold uppercase tracking-[0.2em] text-brand-700 dark:text-brand-300">
+            Resultado da busca
+          </h2>
+          {foundSalons &&
+            (foundSalons.length === 0 ? (
+              <Notice>Nenhum salão encontrado com &quot;{query}&quot;.</Notice>
+            ) : (
+              foundSalons
+                .filter((x) => !mySalons.some((m) => m.id === x.id))
+                .map((x) => (
+                  <SalonCard
+                    key={x.id}
+                    s={x}
+                    saved={false}
+                    back={`/minha-conta?busca=${encodeURIComponent(query)}#busca`}
+                  />
+                ))
+            ))}
+        </section>
+      )}
+
+      <section className="flex flex-col gap-3" id="saloes">
+        <h2 className="text-xs font-semibold uppercase tracking-[0.2em] text-brand-700 dark:text-brand-300">
+          {mySalons.length > 0 ? "Meus salões" : "Encontre seu salão pela busca acima"}
+        </h2>
+        {mySalons.map((x) => (
+          <SalonCard key={x.id} s={x} saved={favSlugs.includes(x.slug)} />
+        ))}
+      </section>
 
       <section className="flex flex-col gap-3">
         <h2 className="text-xs font-semibold uppercase tracking-[0.2em] text-brand-700 dark:text-brand-300">
-          Próximos
+          Meus próximos horários
         </h2>
         {upcoming.length === 0 ? (
           <Card className="flex flex-col gap-3 text-sm text-stone-500">
@@ -164,47 +231,10 @@ export default async function MinhaContaPage({
         )}
       </section>
 
-      <section className="flex flex-col gap-3" id="saloes">
-        <h2 className="text-xs font-semibold uppercase tracking-[0.2em] text-brand-700 dark:text-brand-300">
-          {mySalons.length > 0 ? "Meus salões" : "Encontre seu salão"}
-        </h2>
-        {mySalons.map((x) => (
-          <SalonCard key={x.id} s={x} saved={favSlugs.includes(x.slug)} />
-        ))}
-        <form action="/minha-conta#saloes" className="flex gap-2">
-          {slug && <input type="hidden" name="salao" value={slug} />}
-          <input
-            name="busca"
-            defaultValue={query}
-            placeholder={mySalons.length > 0 ? "Buscar outra barbearia ou salão" : "Nome da barbearia ou salão"}
-            minLength={2}
-            className="min-w-0 flex-1 rounded-xl border border-stone-300 bg-white px-3.5 py-2.5 text-base outline-none focus:border-stone-900 dark:border-stone-700 dark:bg-stone-900"
-          />
-          <button className="rounded-xl border border-stone-300 px-4 text-sm font-semibold dark:border-stone-700">
-            Buscar
-          </button>
-        </form>
-        {foundSalons &&
-          (foundSalons.length === 0 ? (
-            <Notice>Nenhum salão encontrado com &quot;{query}&quot;.</Notice>
-          ) : (
-            foundSalons
-              .filter((x) => !mySalons.some((m) => m.id === x.id))
-              .map((x) => (
-                <SalonCard
-                  key={x.id}
-                  s={x}
-                  saved={false}
-                  back={`/minha-conta?busca=${encodeURIComponent(query)}#saloes`}
-                />
-              ))
-          ))}
-      </section>
-
       {(packages.length > 0 || requests.length > 0) && (
         <section className="flex flex-col gap-3">
           <h2 className="text-xs font-semibold uppercase tracking-[0.2em] text-brand-700 dark:text-brand-300">
-            Meus pacotes
+            Meus pacotes e consumo
           </h2>
           <MyPackages packages={packages} requests={requests} showSalon={!slug} back={here} />
         </section>
