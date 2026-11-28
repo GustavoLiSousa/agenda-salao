@@ -18,7 +18,7 @@ export function AuthForm() {
       <div className="relative grid grid-cols-2 rounded-2xl border border-white/10 bg-black/30 p-1 text-sm font-medium">
         <span
           aria-hidden
-          className={`absolute inset-y-1 left-1 w-[calc(50%-0.25rem)] rounded-xl bg-gradient-to-b from-stone-700 to-stone-800 shadow ring-1 ring-white/10 transition-transform duration-300 ${
+          className={`absolute inset-y-1 left-1 w-[calc(50%-0.25rem)] rounded-xl bg-gradient-to-b from-violet-600/80 to-violet-800/80 shadow ring-1 ring-white/15 transition-transform duration-300 ${
             mode === "criar" ? "translate-x-full" : ""
           }`}
         />

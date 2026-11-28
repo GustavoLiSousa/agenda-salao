@@ -4,12 +4,12 @@ import { useState } from "react";
 
 // Campos do login (fundo escuro), usados nas abas Cliente e Gestão.
 const input =
-  "peer w-full rounded-xl border border-white/10 bg-black/30 px-4 pb-2 pt-6 text-base text-white outline-none transition placeholder:text-transparent focus:border-brand-300/70 focus:bg-black/40 focus:ring-4 focus:ring-brand-300/10";
+  "peer w-full rounded-xl border border-white/10 bg-black/30 px-4 pb-2 pt-6 text-base text-white outline-none transition placeholder:text-transparent focus:border-fuchsia-400/70 focus:bg-black/40 focus:ring-4 focus:ring-fuchsia-400/15";
 const floating =
-  "pointer-events-none absolute left-4 top-4 origin-left text-sm text-stone-400 transition-all peer-focus:top-2 peer-focus:text-[11px] peer-focus:text-brand-300 peer-[:not(:placeholder-shown)]:top-2 peer-[:not(:placeholder-shown)]:text-[11px]";
+  "pointer-events-none absolute left-4 top-4 origin-left text-sm text-stone-400 transition-all peer-focus:top-2 peer-focus:text-[11px] peer-focus:text-fuchsia-300 peer-[:not(:placeholder-shown)]:top-2 peer-[:not(:placeholder-shown)]:text-[11px]";
 
 export const goldButton =
-  "mt-2 inline-flex items-center justify-center gap-2 rounded-xl bg-gradient-to-b from-brand-200 to-brand-400 px-5 py-3.5 font-semibold text-stone-950 shadow-[0_8px_30px_-8px_rgba(214,181,125,0.6)] transition hover:from-brand-100 hover:to-brand-300 active:scale-[0.98] disabled:opacity-60";
+  "mt-2 inline-flex items-center justify-center gap-2 rounded-xl bg-[linear-gradient(110deg,#c026d3,#f43f5e_55%,#fb923c)] bg-[length:200%_100%] px-5 py-3.5 font-semibold text-white shadow-[0_10px_34px_-8px_rgba(244,63,94,0.7)] transition-[background-position,transform] duration-500 hover:bg-[position:100%_0] active:scale-[0.98] disabled:opacity-60";
 
 export function Input({ label, ...props }: React.ComponentProps<"input"> & { label: string }) {
   return (
@@ -45,6 +45,6 @@ export function Message({ kind, children }: { kind: "error" | "info" | "success"
       ? "border-red-400/30 bg-red-500/10 text-red-200"
       : kind === "success"
         ? "border-emerald-400/30 bg-emerald-500/10 text-emerald-200"
-        : "border-brand-300/30 bg-brand-300/10 text-brand-100";
+        : "border-fuchsia-300/30 bg-fuchsia-400/10 text-fuchsia-100";
   return <p className={`rounded-xl border px-3.5 py-2.5 text-sm ${color}`}>{children}</p>;
 }
