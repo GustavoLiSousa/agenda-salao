@@ -242,6 +242,12 @@ export default async function PainelPage({ searchParams }: { searchParams: Promi
           >
             Abrir agenda
           </Link>
+          <Link
+            href={`/painel/agenda/livres?data=${day}`}
+            className="rounded-xl border border-white/25 bg-white/10 px-4 py-2.5 text-sm font-medium text-white backdrop-blur hover:bg-white/20"
+          >
+            Divulgar horários livres
+          </Link>
         </div>
       </section>
 
