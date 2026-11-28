@@ -3,6 +3,7 @@ import { headers } from "next/headers";
 import { BrandMark } from "@/components/brand-mark";
 import { DayStrip } from "@/components/day-strip";
 import { ShareLink } from "@/components/share-link";
+import { SalonCover, SalonLogo } from "@/components/salon-brand";
 import { Avatar, Card } from "@/components/ui";
 import { birthdayMessage, comeBackMessage, daysSince, leadStatus, type ClientStats } from "@/lib/clients";
 import { formatPrice, whatsappLink } from "@/lib/format";
@@ -209,23 +210,20 @@ export default async function PainelPage({ searchParams }: { searchParams: Promi
 
   return (
     <main className="flex flex-col gap-5">
-      {/* Abertura com a arte da marca */}
-      <section className="relative isolate overflow-hidden rounded-3xl bg-stone-950 px-5 py-6 text-stone-100 sm:px-7">
-        <div
-          aria-hidden
-          className="absolute inset-0 -z-10"
-          style={{
-            background:
-              "radial-gradient(90% 120% at 100% 0%, rgba(214,181,125,0.28), transparent 60%), radial-gradient(60% 80% at 0% 100%, rgba(148,107,52,0.18), transparent 70%)",
-          }}
-        />
-        <BrandMark className="pointer-events-none absolute -right-8 -top-6 -z-10 h-48 w-48 opacity-25 sm:h-56 sm:w-56" />
-        <p className="text-[11px] font-medium uppercase tracking-[0.28em] text-brand-300/90">{salon.name}</p>
-        <h1 className="mt-2 font-display text-3xl font-semibold">
+      {/* Abertura com a capa e o logo do salão */}
+      <section className="relative isolate overflow-hidden rounded-3xl px-5 pb-5 pt-6 text-white sm:px-7">
+        <SalonCover salon={salon} />
+        <div className="flex items-center gap-3">
+          <SalonLogo salon={salon} className="h-14 w-14 ring-2 ring-white/50 shadow-lg" />
+          <p className="min-w-0 truncate text-xs font-semibold uppercase tracking-[0.24em] text-white/85">
+            {salon.name}
+          </p>
+        </div>
+        <h1 className="mt-4 font-display text-3xl font-semibold drop-shadow">
           {greeting}
           {firstName ? `, ${firstName}` : ""}
         </h1>
-        <p className="mt-1 text-sm text-stone-400 first-letter:uppercase">
+        <p className="mt-1 text-sm text-white/75 first-letter:uppercase">
           {longDay(today)} ·{" "}
           {counts[today] ? `${counts[today]} horário${counts[today] === 1 ? "" : "s"} hoje` : "nenhum horário hoje"}
           {onlyMine ? " na sua agenda" : ""}
@@ -233,18 +231,20 @@ export default async function PainelPage({ searchParams }: { searchParams: Promi
         <div className="mt-5 flex flex-wrap gap-2">
           <Link
             href={`/painel/agenda/novo?data=${day}${onlyMine && myPro ? `&prof=${myPro}` : ""}`}
-            className="rounded-xl bg-gradient-to-b from-brand-200 to-brand-400 px-4 py-2.5 text-sm font-semibold text-stone-950 shadow-[0_8px_30px_-8px_rgba(214,181,125,0.6)]"
+            className="rounded-xl bg-[linear-gradient(110deg,#c026d3,#f43f5e_60%,#fb923c)] px-4 py-2.5 text-sm font-semibold text-white shadow-lg shadow-fuchsia-900/40"
           >
             + Agendar
           </Link>
           <Link
             href={`/painel/agenda?data=${day}`}
-            className="rounded-xl border border-white/15 bg-white/5 px-4 py-2.5 text-sm font-medium text-stone-100 hover:bg-white/10"
+            className="rounded-xl border border-white/25 bg-white/10 px-4 py-2.5 text-sm font-medium text-white backdrop-blur hover:bg-white/20"
           >
             Abrir agenda
           </Link>
         </div>
       </section>
+
+      <ShareLink slug={salon.slug} salonName={salon.name} />
 
       {/* Avisos que pedem ação */}
       {(joinRequests ?? 0) > 0 && (
@@ -389,17 +389,26 @@ export default async function PainelPage({ searchParams }: { searchParams: Promi
 
         {/* Coluna lateral */}
         <div className="flex flex-col gap-4">
-          {/* Produção do mês */}
+          {/* Atendimentos concluídos no mês */}
           <Card className="p-0">
             <div className="border-b border-stone-100 px-4 py-3 dark:border-stone-800">
-              <h2 className="font-display text-lg font-semibold">{onlyMine ? "Minha produção" : "Produção do mês"}</h2>
-              <p className="text-xs text-stone-500">
-                {done.length} atendimento{done.length === 1 ? "" : "s"} no mês · {todayDone} hoje
-                {showMoney ? ` · ${formatPrice(monthRevenue)}` : ""}
-              </p>
+              <h2 className="font-display text-lg font-semibold">
+                {onlyMine ? "Meus atendimentos no mês" : "Atendimentos no mês"}
+              </h2>
+              <p className="text-xs text-stone-500">Concluídos do dia 1º até agora</p>
+              <div className={`mt-3 grid gap-2 ${showMoney ? "grid-cols-3" : "grid-cols-2"}`}>
+                <Stat label="No mês" value={String(done.length)} />
+                <Stat label="Hoje" value={String(todayDone)} />
+                {showMoney && <Stat label="Faturado" value={formatPrice(monthRevenue)} />}
+              </div>
             </div>
             {!onlyMine && teamList.length > 0 && (
               <ul className="divide-y divide-stone-100 dark:divide-stone-800">
+                <li className="flex items-center gap-3 px-4 py-2 text-[11px] font-medium uppercase tracking-wider text-stone-500">
+                  <span className="flex-1">Por profissional</span>
+                  <span>Atend.</span>
+                  {showMoney && <span className="w-24 text-right">Faturado</span>}
+                </li>
                 {teamList.map((t) => (
                   <li key={t.name} className="flex items-center gap-3 px-4 py-2.5">
                     <Avatar name={t.name} size={30} />
@@ -414,7 +423,9 @@ export default async function PainelPage({ searchParams }: { searchParams: Promi
             )}
             {topServices.length > 0 ? (
               <div className="px-4 py-3">
-                <p className="mb-2 text-xs font-medium uppercase tracking-wider text-stone-500">Mais feitos</p>
+                <p className="mb-2 text-xs font-medium uppercase tracking-wider text-stone-500">
+                  Serviços mais realizados
+                </p>
                 <ul className="flex flex-col gap-1.5">
                   {topServices.map(([name, n]) => (
                     <li key={name} className="flex items-center gap-2 text-sm">
@@ -436,13 +447,18 @@ export default async function PainelPage({ searchParams }: { searchParams: Promi
           {owner && (
             <Card className="p-0">
               <div className="flex items-center justify-between border-b border-stone-100 px-4 py-3 dark:border-stone-800">
-                <h2 className="font-display text-lg font-semibold">Chamar de volta</h2>
-                <Link href="/painel/clientes" className="text-sm text-brand-700 dark:text-brand-300">
-                  {comeBack.length} ›
+                <div>
+                  <h2 className="font-display text-lg font-semibold">Clientes para trazer de volta</h2>
+                  <p className="text-xs text-stone-500">
+                    Sem horário marcado e já no tempo de voltar (ou passaram dele)
+                  </p>
+                </div>
+                <Link href="/painel/clientes" className="shrink-0 text-sm text-brand-700 dark:text-brand-300">
+                  Ver {comeBack.length} ›
                 </Link>
               </div>
               {comeBack.length === 0 ? (
-                <p className="px-4 py-6 text-center text-sm text-stone-500">Ninguém atrasado. Ótimo!</p>
+                <p className="px-4 py-6 text-center text-sm text-stone-500">Todos os clientes estão em dia. Ótimo!</p>
               ) : (
                 <ul className="divide-y divide-stone-100 dark:divide-stone-800">
                   {comeBack.slice(0, 5).map((c) => (
@@ -450,7 +466,7 @@ export default async function PainelPage({ searchParams }: { searchParams: Promi
                       <Avatar name={c.name} size={34} />
                       <Link href={`/painel/clientes/${c.client_id}`} className="min-w-0 flex-1">
                         <p className="truncate text-sm font-medium">{c.name ?? c.phone}</p>
-                        <p className="text-xs text-stone-500">há {daysSince(c.last_visit_at)} dias</p>
+                        <p className="text-xs text-stone-500">última visita há {daysSince(c.last_visit_at)} dias</p>
                       </Link>
                       <a
                         href={whatsappLink(c.phone, comeBackMessage(c, salon.name, bookingLink))}
@@ -495,8 +511,6 @@ export default async function PainelPage({ searchParams }: { searchParams: Promi
               </ul>
             </Card>
           )}
-
-          <ShareLink slug={salon.slug} salonName={salon.name} />
         </div>
       </div>
     </main>
@@ -512,5 +526,14 @@ function Notify({ href, children }: { href: string; children: React.ReactNode })
       <span>{children}</span>
       <span aria-hidden>›</span>
     </Link>
+  );
+}
+
+function Stat({ label, value }: { label: string; value: string }) {
+  return (
+    <div className="rounded-xl bg-stone-50 px-2.5 py-2 dark:bg-stone-800/60">
+      <p className="text-[11px] text-stone-500">{label}</p>
+      <p className="truncate font-display text-lg font-semibold tabular-nums">{value}</p>
+    </div>
   );
 }

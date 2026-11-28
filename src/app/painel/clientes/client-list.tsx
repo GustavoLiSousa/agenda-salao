@@ -18,7 +18,7 @@ type Item = { c: ClientStats; st: LeadStatus; birthdayMonth: boolean; isNew: boo
 
 const FILTERS = [
   { key: "todos", label: "Todos" },
-  { key: "voltar", label: "Chamar de volta" },
+  { key: "voltar", label: "Hora de voltar" },
   { key: "agendados", label: "Agendados" },
   { key: "aniversario", label: "Aniversariantes" },
   { key: "novos", label: "Novos" },
@@ -46,11 +46,13 @@ export function ClientList({
   salonName,
   bookingLink,
   initialFilter,
+  showMoney,
 }: {
   items: Item[];
   salonName: string;
   bookingLink: string;
   initialFilter: Filter;
+  showMoney: boolean;
 }) {
   const [filter, setFilter] = useState<Filter>(initialFilter);
   const [search, setSearch] = useState("");
@@ -75,9 +77,16 @@ export function ClientList({
 
   return (
     <div className="flex flex-col gap-4">
-      <div className="sticky top-[57px] z-10 -mx-4 flex flex-col gap-3 bg-[var(--background)]/95 px-4 py-2 backdrop-blur">
+      <div className="sticky top-[57px] z-10 -mx-4 flex flex-col gap-2.5 border-b border-stone-200/70 bg-[var(--background)]/95 px-4 py-3 backdrop-blur dark:border-stone-800">
         <div className="relative">
-          <svg viewBox="0 0 24 24" className="pointer-events-none absolute top-1/2 left-3.5 h-5 w-5 -translate-y-1/2 text-stone-400" fill="none" stroke="currentColor" strokeWidth="2" aria-hidden>
+          <svg
+            viewBox="0 0 24 24"
+            className="pointer-events-none absolute top-1/2 left-3.5 h-5 w-5 -translate-y-1/2 text-stone-400"
+            fill="none"
+            stroke="currentColor"
+            strokeWidth="2"
+            aria-hidden
+          >
             <circle cx="11" cy="11" r="7" />
             <path d="m20 20-3.5-3.5" />
           </svg>
@@ -100,7 +109,7 @@ export function ClientList({
                   onClick={() => setFilter(f.key)}
                   className={`flex shrink-0 items-center gap-1.5 rounded-full border px-3 py-1.5 text-sm transition ${
                     on
-                      ? "border-stone-900 bg-stone-900 text-white dark:border-stone-100 dark:bg-stone-100 dark:text-stone-900"
+                      ? "border-transparent bg-[linear-gradient(110deg,#c026d3,#f43f5e)] text-white shadow-sm"
                       : "border-stone-300 bg-white text-stone-700 hover:border-stone-400 dark:border-stone-700 dark:bg-stone-900 dark:text-stone-300"
                   }`}
                 >
@@ -110,35 +119,52 @@ export function ClientList({
               );
             })}
           </div>
-          <label className="flex items-center justify-end gap-2 text-xs text-stone-500">
-          Ordenar por
-          <select
-            value={sort}
-            onChange={(e) => setSort(e.target.value as Sort)}
-            className="rounded-lg border border-stone-300 bg-white px-2 py-1 text-xs text-stone-700 dark:border-stone-700 dark:bg-stone-900 dark:text-stone-300"
-          >
-            {Object.entries(SORTS).map(([k, v]) => (
-              <option key={k} value={k}>
-                {v}
-              </option>
-            ))}
-          </select>
+          <label className="flex items-center justify-between gap-2 text-xs text-stone-500">
+            <span>
+              {list.length} cliente{list.length === 1 ? "" : "s"} na lista
+            </span>
+            <span className="flex items-center gap-2">
+              Ordenar por
+              <select
+                value={sort}
+                onChange={(e) => setSort(e.target.value as Sort)}
+                className="rounded-lg border border-stone-300 bg-white px-2 py-1 text-xs text-stone-700 dark:border-stone-700 dark:bg-stone-900 dark:text-stone-300"
+              >
+                {Object.entries(SORTS)
+                  .filter(([k]) => showMoney || k !== "gasto")
+                  .map(([k, v]) => (
+                    <option key={k} value={k}>
+                      {v}
+                    </option>
+                  ))}
+              </select>
+            </span>
           </label>
         </div>
       </div>
 
       {list.length === 0 ? (
         <p className="rounded-2xl border border-dashed border-stone-300 px-4 py-10 text-center text-sm text-stone-500 dark:border-stone-700">
-          {search ? "Ninguém encontrado com essa busca." : filter === "voltar" ? "Ninguém atrasado. Ótimo!" : "Nenhum cliente aqui ainda."}
+          {search
+            ? "Ninguém encontrado com essa busca."
+            : filter === "voltar"
+              ? "Todos os clientes estão em dia. Ótimo!"
+              : "Nenhum cliente aqui ainda."}
         </p>
       ) : (
         <ul className="divide-y divide-stone-100 overflow-hidden rounded-2xl border border-stone-200/80 bg-white dark:divide-stone-800 dark:border-stone-800 dark:bg-stone-900">
           {list.map(({ c, st }) => {
             const since = daysSince(c.last_visit_at);
             const late = st === "sumido" || st === "vencendo";
-            const msg = filter === "aniversario" ? birthdayMessage(c, salonName, bookingLink) : comeBackMessage(c, salonName, bookingLink);
+            const msg =
+              filter === "aniversario"
+                ? birthdayMessage(c, salonName, bookingLink)
+                : comeBackMessage(c, salonName, bookingLink);
             return (
-              <li key={c.client_id} className="flex items-center gap-3 px-4 py-3 transition hover:bg-stone-50 dark:hover:bg-stone-800/50">
+              <li
+                key={c.client_id}
+                className="flex items-center gap-3 px-4 py-3 transition hover:bg-stone-50 dark:hover:bg-stone-800/50"
+              >
                 <Avatar name={c.name} size={42} />
                 <Link href={`/painel/clientes/${c.client_id}`} className="min-w-0 flex-1">
                   <div className="flex items-center gap-2">
@@ -151,14 +177,17 @@ export function ClientList({
                   </p>
                   <p className="text-xs text-stone-400">
                     {c.visits} visita{c.visits === 1 ? "" : "s"}
-                    {c.total_spent_cents ? ` · ${formatPrice(c.total_spent_cents)}` : ""}
+                    {showMoney && c.total_spent_cents ? ` · ${formatPrice(c.total_spent_cents)}` : ""}
                     {c.return_every_days
                       ? ` · volta a cada ${c.return_every_days} dias${c.return_source ? ` (${RETURN_SOURCE_LABEL[c.return_source]})` : ""}`
                       : ""}
                   </p>
                 </Link>
                 <a
-                  href={whatsappLink(c.phone, late || filter === "aniversario" ? msg : `Olá ${c.name ?? ""}! Aqui é do ${salonName}.`)}
+                  href={whatsappLink(
+                    c.phone,
+                    late || filter === "aniversario" ? msg : `Olá ${c.name ?? ""}! Aqui é do ${salonName}.`,
+                  )}
                   target="_blank"
                   rel="noreferrer"
                   aria-label="WhatsApp"

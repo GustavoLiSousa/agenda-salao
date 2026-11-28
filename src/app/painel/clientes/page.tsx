@@ -1,6 +1,7 @@
 import { headers } from "next/headers";
 import { Button, Field, Notice, PageHeader } from "@/components/ui";
 import { isBirthdayMonth, leadStatus, type ClientStats } from "@/lib/clients";
+import { can } from "@/lib/permissions";
 import { requireSalon } from "@/lib/session";
 import { createClientManual } from "./actions";
 import { ClientList } from "./client-list";
@@ -42,29 +43,50 @@ export default async function ClientesPage({
     <main className="flex flex-col gap-4">
       <PageHeader
         title="Clientes"
-        subtitle={`${all.length} cadastrado${all.length === 1 ? "" : "s"}${late ? ` · ${late} para chamar de volta` : ""}`}
+        subtitle={`${all.length} cadastrado${all.length === 1 ? "" : "s"}${late ? ` · ${late} na hora de voltar` : ""}`}
       />
 
-      <details open={!!q.novo} className="group rounded-2xl border border-stone-200/80 bg-white dark:border-stone-800 dark:bg-stone-900">
+      <details
+        open={!!q.novo}
+        className="group rounded-2xl border border-stone-200/80 bg-white dark:border-stone-800 dark:bg-stone-900"
+      >
         <summary className="flex cursor-pointer list-none items-center justify-between px-4 py-3 font-medium sm:px-5">
           + Cadastrar cliente
           <span className="text-stone-400 transition group-open:rotate-45">+</span>
         </summary>
         <div className="border-t border-stone-100 p-4 sm:p-5 dark:border-stone-800">
-          {q.erro && <div className="mb-3"><Notice kind="error">{q.erro}</Notice></div>}
+          {q.erro && (
+            <div className="mb-3">
+              <Notice kind="error">{q.erro}</Notice>
+            </div>
+          )}
           <form action={createClientManual} className="grid gap-3 sm:grid-cols-2">
             <Field label="Nome" name="name" required />
             <Field label="WhatsApp" name="phone" type="tel" inputMode="tel" placeholder="11 99999-9999" required />
             <Field label="Aniversário (opcional)" name="birthday" type="date" />
-            <Field label="Volta a cada (dias, opcional)" name="return_every_days" type="number" min={1} max={365} placeholder="15" />
+            <Field
+              label="Volta a cada (dias, opcional)"
+              name="return_every_days"
+              type="number"
+              min={1}
+              max={365}
+              placeholder="15"
+            />
             <Button className="sm:col-span-2 sm:justify-self-start">Cadastrar</Button>
           </form>
         </div>
       </details>
 
-      <ClientList items={items} salonName={salon.name} bookingLink={link} initialFilter={initialFilter} />
+      <ClientList
+        items={items}
+        salonName={salon.name}
+        bookingLink={link}
+        initialFilter={initialFilter}
+        showMoney={can(membership, "faturamento")}
+      />
       <p className="text-center text-xs text-stone-400">
-        &quot;Chamar de volta&quot; = passou do tempo de voltar (do cliente, do serviço ou {salon.inactive_after_days} dias) e não marcou.
+        &quot;Hora de voltar&quot; = está perto ou passou do tempo de voltar (do cliente, do serviço ou{" "}
+        {salon.inactive_after_days} dias) e não marcou.
       </p>
     </main>
   );
