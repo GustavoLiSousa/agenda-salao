@@ -5,7 +5,8 @@ import { Button, Card, Field, GhostButton, Notice, Select } from "@/components/u
 import { formatPrice } from "@/lib/format";
 import { WEEKDAYS } from "@/lib/parse";
 import { requireOwner } from "@/lib/session";
-import { formatDateTime } from "@/lib/time";
+import { HOLIDAY_KIND, upcomingHolidays } from "@/lib/holidays";
+import { dayKey, formatDateTime, todayIn } from "@/lib/time";
 import type { Professional, Service } from "@/lib/types";
 import { AccessCard } from "../team-access";
 import { addTimeBlock, deleteProfessional, removeTimeBlock, saveProfessional, saveWorkingHours } from "../actions";
@@ -25,7 +26,8 @@ const OK: Record<string, string> = {
 };
 
 const hhmm = (t: string) => t.slice(0, 5);
-const timeInput = "rounded-md border border-stone-300 bg-white px-2 py-1 text-sm dark:border-stone-700 dark:bg-stone-900";
+const timeInput =
+  "rounded-md border border-stone-300 bg-white px-2 py-1 text-sm dark:border-stone-700 dark:bg-stone-900";
 
 export default async function ProfissionalPage({
   params,
@@ -48,9 +50,20 @@ export default async function ProfissionalPage({
   if (!pro) notFound();
 
   const [{ data: services }, { data: links }, { data: hours }, { data: blocks }] = await Promise.all([
-    supabase.from("services").select("*").eq("salon_id", membership.salon.id).eq("active", true).order("name").returns<Service[]>(),
+    supabase
+      .from("services")
+      .select("*")
+      .eq("salon_id", membership.salon.id)
+      .eq("active", true)
+      .order("name")
+      .returns<Service[]>(),
     supabase.from("professional_services").select("service_id").eq("professional_id", id),
-    supabase.from("working_hours").select("weekday, start_time, end_time").eq("professional_id", id).order("start_time").returns<Hour[]>(),
+    supabase
+      .from("working_hours")
+      .select("weekday, start_time, end_time")
+      .eq("professional_id", id)
+      .order("start_time")
+      .returns<Hour[]>(),
     supabase
       .from("time_blocks")
       .select("id, starts_at, ends_at, reason")
@@ -73,7 +86,9 @@ export default async function ProfissionalPage({
     ? {
         ...member,
         since: member.created_at,
-        email: ((emails ?? []) as { user_id: string; email: string }[]).find((e) => e.user_id === member.user_id)?.email ?? "",
+        email:
+          ((emails ?? []) as { user_id: string; email: string }[]).find((e) => e.user_id === member.user_id)?.email ??
+          "",
       }
     : null;
   const doing = new Set((links ?? []).map((l) => l.service_id as string));
@@ -94,7 +109,13 @@ export default async function ProfissionalPage({
           <input type="hidden" name="id" value={pro.id} />
           <h2 className="font-display text-lg font-semibold">Dados</h2>
           <div className="w-32">
-            <ImageInput name="photo" label="Foto" current={pro.photo_url} aspect="aspect-square" removeName="remove_photo" />
+            <ImageInput
+              name="photo"
+              label="Foto"
+              current={pro.photo_url}
+              aspect="aspect-square"
+              removeName="remove_photo"
+            />
           </div>
           <div className="grid gap-3 sm:grid-cols-2">
             <Field label="Nome" name="name" defaultValue={pro.name} required />
@@ -119,7 +140,11 @@ export default async function ProfissionalPage({
             </div>
           ) : (
             <p className="text-sm text-stone-500">
-              Cadastre serviços primeiro em <Link className="text-brand-700 dark:text-brand-300" href="/painel/servicos">Serviços</Link>.
+              Cadastre serviços primeiro em{" "}
+              <Link className="text-brand-700 dark:text-brand-300" href="/painel/servicos">
+                Serviços
+              </Link>
+              .
             </p>
           )}
 
@@ -137,11 +162,7 @@ export default async function ProfissionalPage({
               max={365}
               defaultValue={pro.release_days_ahead}
             />
-            <Select
-              label="Semanal: dia que abre"
-              name="release_weekday"
-              defaultValue={pro.release_weekday ?? 1}
-            >
+            <Select label="Semanal: dia que abre" name="release_weekday" defaultValue={pro.release_weekday ?? 1}>
               {WEEKDAYS.map((d, i) => (
                 <option key={d} value={i}>
                   {d}
@@ -193,13 +214,33 @@ export default async function ProfissionalPage({
                   <input type="checkbox" name={`on_${d}`} defaultChecked={day.length > 0} />
                   {label}
                 </label>
-                <input className={timeInput} type="time" name={`start1_${d}`} defaultValue={day[0] ? hhmm(day[0].start_time) : "09:00"} />
+                <input
+                  className={timeInput}
+                  type="time"
+                  name={`start1_${d}`}
+                  defaultValue={day[0] ? hhmm(day[0].start_time) : "09:00"}
+                />
                 <span>às</span>
-                <input className={timeInput} type="time" name={`end1_${d}`} defaultValue={day[0] ? hhmm(day[0].end_time) : "12:00"} />
+                <input
+                  className={timeInput}
+                  type="time"
+                  name={`end1_${d}`}
+                  defaultValue={day[0] ? hhmm(day[0].end_time) : "12:00"}
+                />
                 <span className="text-stone-400">e</span>
-                <input className={timeInput} type="time" name={`start2_${d}`} defaultValue={day[1] ? hhmm(day[1].start_time) : day.length ? "" : "13:00"} />
+                <input
+                  className={timeInput}
+                  type="time"
+                  name={`start2_${d}`}
+                  defaultValue={day[1] ? hhmm(day[1].start_time) : day.length ? "" : "13:00"}
+                />
                 <span>às</span>
-                <input className={timeInput} type="time" name={`end2_${d}`} defaultValue={day[1] ? hhmm(day[1].end_time) : day.length ? "" : "19:00"} />
+                <input
+                  className={timeInput}
+                  type="time"
+                  name={`end2_${d}`}
+                  defaultValue={day[1] ? hhmm(day[1].end_time) : day.length ? "" : "19:00"}
+                />
               </div>
             );
           })}
@@ -234,7 +275,10 @@ export default async function ProfissionalPage({
         ) : (
           <p className="text-sm text-stone-500">Nenhum bloqueio programado.</p>
         )}
-        <form action={addTimeBlock} className="grid gap-3 border-t border-stone-200 pt-3 sm:grid-cols-2 dark:border-stone-800">
+        <form
+          action={addTimeBlock}
+          className="grid gap-3 border-t border-stone-200 pt-3 sm:grid-cols-2 dark:border-stone-800"
+        >
           <input type="hidden" name="id" value={pro.id} />
           <Field label="De (data)" name="start_day" type="date" required />
           <Field label="Até (data)" name="end_day" type="date" hint="Deixe vazio se for só um dia." />
@@ -248,6 +292,55 @@ export default async function ProfissionalPage({
           </div>
           <Button className="self-start">Adicionar bloqueio</Button>
         </form>
+
+        <details className="group rounded-xl border border-stone-200 dark:border-stone-800">
+          <summary className="flex cursor-pointer list-none items-center justify-between px-3 py-2.5 text-sm font-medium">
+            <span>📅 Feriados e datas comemorativas (próximos 12 meses)</span>
+            <span className="text-stone-400 transition group-open:rotate-90">›</span>
+          </summary>
+          <p className="px-3 text-xs text-stone-500">
+            Toque em &quot;Folga&quot; para bloquear o dia inteiro. Em datas comemorativas o movimento costuma ser
+            maior.
+          </p>
+          <ul className="mt-2 divide-y divide-stone-100 dark:divide-stone-800">
+            {upcomingHolidays(todayIn(tz)).map((h) => {
+              const blocked = (blocks ?? []).some(
+                (b) => dayKey(b.starts_at, tz) <= h.day && dayKey(new Date(Date.parse(b.ends_at) - 1), tz) >= h.day,
+              );
+              return (
+                <li key={h.day + h.name} className="flex items-center gap-3 px-3 py-2">
+                  <span className="w-14 shrink-0 text-center">
+                    <span className="block font-display text-lg font-semibold leading-none">{h.day.slice(8)}</span>
+                    <span className="text-[10px] uppercase text-stone-500">
+                      {new Intl.DateTimeFormat("pt-BR", { month: "short", weekday: "short", timeZone: "UTC" }).format(
+                        new Date(`${h.day}T12:00:00Z`),
+                      )}
+                    </span>
+                  </span>
+                  <span className="min-w-0 flex-1">
+                    <span className="block truncate text-sm font-medium">{h.name}</span>
+                    <span
+                      className={`mt-0.5 inline-block rounded-full px-2 py-0.5 text-[10px] font-medium ${HOLIDAY_KIND[h.kind].cls}`}
+                    >
+                      {HOLIDAY_KIND[h.kind].label}
+                    </span>
+                  </span>
+                  {blocked ? (
+                    <span className="text-xs font-medium text-emerald-700 dark:text-emerald-400">✓ Folga</span>
+                  ) : (
+                    <form action={addTimeBlock}>
+                      <input type="hidden" name="id" value={pro.id} />
+                      <input type="hidden" name="start_day" value={h.day} />
+                      <input type="hidden" name="all_day" value="on" />
+                      <input type="hidden" name="reason" value={h.name} />
+                      <GhostButton>Folga</GhostButton>
+                    </form>
+                  )}
+                </li>
+              );
+            })}
+          </ul>
+        </details>
       </Card>
 
       {membership.role === "owner" && (

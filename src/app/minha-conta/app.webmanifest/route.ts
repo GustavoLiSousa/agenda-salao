@@ -2,7 +2,7 @@
 export function GET() {
   const manifest = {
     id: "/minha-conta",
-    name: "Meus agendamentos",
+    name: "Central do cliente",
     short_name: "Meus horários",
     description: "Veja, remarque ou desmarque seus horários no salão.",
     start_url: "/minha-conta",

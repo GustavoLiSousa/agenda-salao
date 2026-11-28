@@ -1,5 +1,6 @@
 import Link from "next/link";
 import { Card } from "@/components/ui";
+import { Icon, ICON_TONE } from "@/components/icons";
 import { whatsappLink } from "@/lib/format";
 import { toggleFavoriteSalon } from "./actions";
 
@@ -13,8 +14,41 @@ export type SalonSummary = {
   rating?: { average: number; total: number } | null;
 };
 
-const small =
-  "inline-flex items-center justify-center gap-1.5 rounded-xl border border-stone-200 px-3 py-2 text-xs font-medium text-stone-700 transition hover:border-stone-400 dark:border-stone-700 dark:text-stone-200";
+/** Atalho do salão com ícone colorido (sem link fica apagado). */
+function SalonAction({
+  href,
+  icon,
+  label,
+  external,
+}: {
+  href?: string;
+  icon: "calendar" | "route" | "whatsapp";
+  label: string;
+  external?: boolean;
+}) {
+  const inner = (
+    <>
+      <span
+        className={`flex h-9 w-9 items-center justify-center rounded-full bg-gradient-to-br text-white shadow ${ICON_TONE[icon]}`}
+      >
+        <Icon name={icon} size={18} />
+      </span>
+      {label}
+    </>
+  );
+  const cls =
+    "flex flex-col items-center gap-1 rounded-xl border border-stone-200 px-1 py-2 text-center text-[11px] font-medium text-stone-700 transition dark:border-stone-700 dark:text-stone-200";
+  if (!href) return <span className={`${cls} opacity-35 grayscale`}>{inner}</span>;
+  return external ? (
+    <a href={href} target="_blank" rel="noreferrer" className={`${cls} hover:border-stone-400`}>
+      {inner}
+    </a>
+  ) : (
+    <Link href={href} className={`${cls} hover:border-stone-400`}>
+      {inner}
+    </Link>
+  );
+}
 
 /** Um salão na área do cliente: agendar, ver a página, como chegar e WhatsApp. */
 export function SalonCard({ s, saved, back = "/minha-conta" }: { s: SalonSummary; saved: boolean; back?: string }) {
@@ -46,32 +80,26 @@ export function SalonCard({ s, saved, back = "/minha-conta" }: { s: SalonSummary
       </div>
       <Link
         href={`/${s.slug}`}
-        className="rounded-xl bg-stone-900 px-4 py-3 text-center text-sm font-semibold text-white transition hover:bg-stone-800 dark:bg-stone-100 dark:text-stone-900"
+        className="rounded-xl bg-[linear-gradient(110deg,#c026d3,#f43f5e_60%,#fb923c)] px-4 py-3 text-center text-sm font-semibold text-white shadow-md shadow-fuchsia-900/20 transition hover:opacity-95"
       >
         Abrir salão
       </Link>
       <div className="grid grid-cols-3 gap-2">
-        <Link href={`/${s.slug}/agendar`} className={small}>
-          Agendar
-        </Link>
+        <SalonAction href={`/${s.slug}/agendar`} icon="calendar" label="Agendar" />
         {s.address ? (
-          <a
-            href={`https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(s.address)}`}
-            target="_blank"
-            rel="noreferrer"
-            className={small}
-          >
-            Como chegar
-          </a>
+          <SalonAction
+            href={`https://www.google.com/maps/dir/?api=1&destination=${encodeURIComponent(s.address)}`}
+            icon="route"
+            label="Como chegar"
+            external
+          />
         ) : (
-          <span className={`${small} opacity-40`}>Sem endereço</span>
+          <SalonAction icon="route" label="Sem endereço" />
         )}
         {s.whatsapp ? (
-          <a href={whatsappLink(s.whatsapp, `Olá, ${s.name}!`)} target="_blank" rel="noreferrer" className={small}>
-            WhatsApp
-          </a>
+          <SalonAction href={whatsappLink(s.whatsapp, `Olá, ${s.name}!`)} icon="whatsapp" label="WhatsApp" external />
         ) : (
-          <span className={`${small} opacity-40`}>Sem WhatsApp</span>
+          <SalonAction icon="whatsapp" label="Sem WhatsApp" />
         )}
       </div>
     </Card>

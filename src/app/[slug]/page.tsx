@@ -11,6 +11,7 @@ import { openStatus, openingHours, WEEKDAYS, type WorkingHourRow } from "@/lib/o
 import type { MyAppointment } from "@/lib/client-area";
 import { formatLongDate, formatTime } from "@/lib/time";
 import { FavoriteButton } from "@/app/minha-conta/salon-card";
+import { ShortcutTile } from "@/components/icons";
 
 export const dynamic = "force-dynamic";
 
@@ -161,7 +162,7 @@ export default async function SalonPage({ params }: { params: Promise<{ slug: st
             href={`/minha-conta?salao=${salon.slug}`}
             className="absolute right-4 top-[calc(1rem+env(safe-area-inset-top))] rounded-full bg-white/90 px-4 py-2 text-sm font-semibold text-stone-900 shadow-md backdrop-blur transition hover:bg-white"
           >
-            Meus agendamentos
+            Central do cliente
           </Link>
         </div>
         <div className="relative mx-auto -mt-16 flex max-w-2xl items-end gap-4 px-5">
@@ -225,35 +226,29 @@ export default async function SalonPage({ params }: { params: Promise<{ slug: st
               </a>
             )}
           </div>
-          <div className="mt-4 grid grid-cols-4 gap-2 text-center text-xs font-medium">
-            {[
-              mapQuery && {
-                href: `https://www.google.com/maps/dir/?api=1&destination=${mapQuery}`,
-                icon: "📍",
-                label: "Como chegar",
-                ext: true,
-              },
-              salon.whatsapp && {
-                href: whatsappLink(salon.whatsapp, `Olá, ${salon.name}!`),
-                icon: "💬",
-                label: "WhatsApp",
-                ext: true,
-              },
-              (hasHours || !!salon.address) && { href: "#local", icon: "🕒", label: "Horários" },
-              { href: reviewHref ?? "#avaliacoes", icon: "★", label: reviewHref ? "Avaliar" : "Avaliações" },
-            ]
-              .filter((x): x is { href: string; icon: string; label: string; ext?: boolean } => !!x)
-              .map((x) => (
-                <a
-                  key={x.label}
-                  href={x.href}
-                  {...(x.ext ? { target: "_blank", rel: "noreferrer" } : {})}
-                  className="flex flex-col items-center gap-1 rounded-2xl border border-stone-200/80 bg-white py-2.5 transition hover:border-stone-400 dark:border-stone-800 dark:bg-stone-900"
-                >
-                  <span className="text-base leading-none">{x.icon}</span>
-                  {x.label}
-                </a>
-              ))}
+          <div className="mt-5 grid grid-cols-4 gap-2">
+            {mapQuery && (
+              <ShortcutTile
+                href={`https://www.google.com/maps/dir/?api=1&destination=${mapQuery}`}
+                icon="route"
+                label="Como chegar"
+                external
+              />
+            )}
+            {salon.whatsapp && (
+              <ShortcutTile
+                href={whatsappLink(salon.whatsapp, `Olá, ${salon.name}!`)}
+                icon="whatsapp"
+                label="WhatsApp"
+                external
+              />
+            )}
+            {(hasHours || !!salon.address) && <ShortcutTile href="#local" icon="clock" label="Horários" />}
+            <ShortcutTile
+              href={reviewHref ?? "#avaliacoes"}
+              icon="star"
+              label={reviewHref ? "Avaliar" : "Avaliações"}
+            />
           </div>
         </div>
       </header>

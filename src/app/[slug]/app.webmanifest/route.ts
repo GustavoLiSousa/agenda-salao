@@ -30,7 +30,7 @@ export async function GET(_: Request, { params }: { params: Promise<{ slug: stri
     ],
     shortcuts: [
       { name: "Agendar horário", url: `/${salon.slug}/agendar` },
-      { name: "Meus agendamentos", url: `/minha-conta?salao=${salon.slug}` },
+      { name: "Central do cliente", url: `/minha-conta?salao=${salon.slug}` },
     ],
   };
   return new Response(JSON.stringify(manifest), {
