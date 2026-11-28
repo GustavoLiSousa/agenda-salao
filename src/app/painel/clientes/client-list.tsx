@@ -165,7 +165,7 @@ export function ClientList({
                 key={c.client_id}
                 className="flex items-center gap-3 px-4 py-3 transition hover:bg-stone-50 dark:hover:bg-stone-800/50"
               >
-                <Avatar name={c.name} size={42} />
+                <Avatar name={c.name} src={c.avatar_url} size={42} />
                 <Link href={`/painel/clientes/${c.client_id}`} className="min-w-0 flex-1">
                   <div className="flex items-center gap-2">
                     <p className="truncate font-medium">{c.name ?? "Sem nome"}</p>

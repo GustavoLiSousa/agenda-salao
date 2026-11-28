@@ -473,7 +473,7 @@ export default async function PainelPage({ searchParams }: { searchParams: Promi
                 <ul className="divide-y divide-stone-100 dark:divide-stone-800">
                   {comeBack.slice(0, 5).map((c) => (
                     <li key={c.client_id} className="flex items-center gap-3 px-4 py-2.5">
-                      <Avatar name={c.name} size={34} />
+                      <Avatar name={c.name} src={c.avatar_url} size={34} />
                       <Link href={`/painel/clientes/${c.client_id}`} className="min-w-0 flex-1">
                         <p className="truncate text-sm font-medium">{c.name ?? c.phone}</p>
                         <p className="text-xs text-stone-500">última visita há {daysSince(c.last_visit_at)} dias</p>
@@ -501,7 +501,7 @@ export default async function PainelPage({ searchParams }: { searchParams: Promi
               <ul className="divide-y divide-stone-100 dark:divide-stone-800">
                 {birthdays.map((c) => (
                   <li key={c.client_id} className="flex items-center gap-3 px-4 py-2.5">
-                    <Avatar name={c.name} size={34} />
+                    <Avatar name={c.name} src={c.avatar_url} size={34} />
                     <div className="min-w-0 flex-1">
                       <p className="truncate text-sm font-medium">{c.name ?? c.phone}</p>
                       <p className="text-xs text-stone-500">
