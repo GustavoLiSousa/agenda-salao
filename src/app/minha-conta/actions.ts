@@ -92,6 +92,8 @@ export async function saveClientProfile(formData: FormData) {
     data: { name, full_name: name, phone: phone || null, birthday: birthday || null, avatar_url: avatar },
   });
   if (error) fail(error.message);
+  // o nome novo também vale no cadastro do cliente em cada salão
+  await supabase.rpc("sync_my_client_profile", { p_name: name, p_birthday: birthday || null });
   revalidatePath("/minha-conta");
   redirect("/minha-conta/perfil?ok=1");
 }

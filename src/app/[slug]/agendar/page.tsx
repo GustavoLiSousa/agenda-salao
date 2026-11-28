@@ -62,8 +62,11 @@ export default async function AgendarPage({
       .limit(20)
       .returns<{ name: string | null; phone: string; salon_id: string }[]>();
     const row = (rows ?? []).find((r) => r.salon_id === salon.id) ?? rows?.[0];
-    if (row) me = { name: row.name, phone: row.phone.replace(/^55/, "") };
-    else if (user.user_metadata?.name) me = { name: String(user.user_metadata.name), phone: "" };
+    // o nome do perfil da conta vale mais que o nome antigo guardado no salão
+    const metaName = user.user_metadata?.name ? String(user.user_metadata.name) : null;
+    const metaPhone = user.user_metadata?.phone ? String(user.user_metadata.phone) : "";
+    if (row) me = { name: metaName ?? row.name, phone: row.phone.replace(/^55/, "") };
+    else if (metaName || metaPhone) me = { name: metaName, phone: metaPhone };
   }
 
   let reschedule: Reschedule | null = null;
