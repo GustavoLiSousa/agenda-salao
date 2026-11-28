@@ -8,7 +8,7 @@ import { AuthForm } from "./auth-form";
 
 export const dynamic = "force-dynamic";
 export const metadata = { title: "Entrar | Agenda Salão" };
-export const viewport = { themeColor: "#0c0a09" };
+export const viewport = { themeColor: "#0b0618" };
 
 export default async function EntrarPage({
   searchParams,
@@ -29,55 +29,51 @@ export default async function EntrarPage({
   }
 
   return (
-    <main className="relative isolate flex min-h-screen flex-col overflow-hidden bg-stone-950 text-stone-100">
-      {/* brilho dourado e textura sutil ao fundo */}
-      <div
-        aria-hidden
-        className="pointer-events-none absolute inset-0 -z-10"
-        style={{
-          background:
-            "radial-gradient(120% 60% at 50% -10%, rgba(214,181,125,0.22), transparent 60%), radial-gradient(80% 50% at 100% 100%, rgba(148,107,52,0.16), transparent 70%)",
-        }}
-      />
-      <div
-        aria-hidden
-        className="pointer-events-none absolute inset-0 -z-10 opacity-[0.07]"
-        style={{
-          backgroundImage:
-            "linear-gradient(rgba(255,255,255,.6) 1px, transparent 1px), linear-gradient(90deg, rgba(255,255,255,.6) 1px, transparent 1px)",
-          backgroundSize: "44px 44px",
-          maskImage: "radial-gradient(70% 50% at 50% 20%, black, transparent)",
-          WebkitMaskImage: "radial-gradient(70% 50% at 50% 20%, black, transparent)",
-        }}
-      />
+    <main className="relative isolate flex min-h-screen flex-col overflow-hidden bg-[#0b0618] text-stone-100">
+      {/* aurora colorida animada ao fundo */}
+      <div aria-hidden className="pointer-events-none absolute inset-0 -z-10 overflow-hidden">
+        <div className="aurora-a absolute -left-1/4 -top-1/4 h-[70vh] w-[90vw] rounded-full bg-[radial-gradient(closest-side,rgba(192,38,211,0.55),transparent)] blur-3xl" />
+        <div className="aurora-b absolute -right-1/4 top-1/4 h-[60vh] w-[80vw] rounded-full bg-[radial-gradient(closest-side,rgba(244,63,94,0.45),transparent)] blur-3xl" />
+        <div className="aurora-a absolute -bottom-1/4 left-0 h-[55vh] w-[80vw] rounded-full bg-[radial-gradient(closest-side,rgba(124,58,237,0.5),transparent)] blur-3xl [animation-delay:-6s]" />
+        <div className="aurora-b absolute bottom-0 right-0 h-[40vh] w-[50vw] rounded-full bg-[radial-gradient(closest-side,rgba(251,146,60,0.35),transparent)] blur-3xl [animation-delay:-9s]" />
+        <div
+          className="absolute inset-0 opacity-[0.06]"
+          style={{
+            backgroundImage: "radial-gradient(rgba(255,255,255,.9) 1px, transparent 1px)",
+            backgroundSize: "22px 22px",
+            maskImage: "radial-gradient(80% 60% at 50% 30%, black, transparent)",
+            WebkitMaskImage: "radial-gradient(80% 60% at 50% 30%, black, transparent)",
+          }}
+        />
+      </div>
 
       <div className="mx-auto flex w-full max-w-sm flex-1 flex-col justify-center px-6 py-10">
-        <div className="flex flex-col items-center text-center">
-          <span className="relative flex h-20 w-20 items-center justify-center rounded-[1.6rem] border border-brand-300/25 bg-gradient-to-b from-stone-800/90 to-stone-950 shadow-[0_14px_50px_-12px_rgba(214,181,125,0.5)]">
-            <BrandMark className="h-16 w-16" title="Agenda Salão" />
+        <div className="rise-in flex flex-col items-center text-center">
+          <span className="relative flex h-24 w-24 items-center justify-center">
+            <span className="absolute inset-0 animate-[spin_12s_linear_infinite] rounded-[2rem] bg-[conic-gradient(from_0deg,#c026d3,#f43f5e,#fb923c,#a855f7,#c026d3)] opacity-90 blur-[2px]" />
+            <span className="relative flex h-[5.5rem] w-[5.5rem] items-center justify-center rounded-[1.8rem] bg-[#140b26] shadow-[0_18px_60px_-10px_rgba(217,70,239,0.7)]">
+              <BrandMark className="h-16 w-16" title="Agenda Salão" tone="vivid" />
+            </span>
           </span>
           {cliente ? (
             <>
-              <p className="mt-6 text-[11px] font-medium uppercase tracking-[0.32em] text-brand-300/80">Agenda Salão</p>
-              <h1 className="mt-2 font-display text-4xl font-semibold tracking-tight">Meus horários</h1>
+              <p className="mt-7 text-[11px] font-semibold uppercase tracking-[0.34em] text-fuchsia-200/80">
+                Agenda Salão
+              </p>
+              <h1 className="text-shine mt-2 font-display text-5xl font-semibold tracking-tight">Meus horários</h1>
             </>
           ) : (
             <>
-              <h1 className="mt-6 font-display text-4xl font-semibold tracking-tight">Agenda Salão</h1>
-              <p className="mt-2 text-[11px] font-medium uppercase tracking-[0.28em] text-brand-300/85">
+              <h1 className="text-shine mt-7 font-display text-5xl font-semibold tracking-tight">Agenda Salão</h1>
+              <p className="mt-3 text-[11px] font-semibold uppercase tracking-[0.3em] text-fuchsia-200/85">
                 Gestão para seu salão / Estúdio
               </p>
             </>
           )}
-          <div className="my-4 flex items-center gap-3 text-brand-300/60" aria-hidden>
-            <span className="h-px w-10 bg-gradient-to-r from-transparent to-brand-300/50" />
-            <span className="text-xs">✦</span>
-            <span className="h-px w-10 bg-gradient-to-l from-transparent to-brand-300/50" />
-          </div>
-          <p className="text-sm leading-relaxed text-stone-400">
+          <p className="mt-4 text-sm leading-relaxed text-violet-100/70">
             {cliente ? (
               <>
-                Para clientes: veja, remarque ou desmarque seus horários.
+                Veja, remarque ou desmarque seus horários.
                 <br />
                 Para marcar um horário não precisa de conta.
               </>
@@ -85,13 +81,35 @@ export default async function EntrarPage({
               <>
                 Para donos e profissionais.
                 <br />
-                Gerencie a agenda, os clientes e a equipe.
+                Agenda, clientes e equipe na palma da mão.
               </>
             )}
           </p>
+          <ul className="mt-5 flex flex-wrap justify-center gap-2 text-xs font-medium">
+            {(cliente
+              ? [
+                  ["📅", "Seus horários"],
+                  ["💈", "Seus salões"],
+                  ["⭐", "Avaliações"],
+                ]
+              : [
+                  ["📅", "Agenda online 24h"],
+                  ["💬", "Lembretes no WhatsApp"],
+                  ["🎁", "Fidelidade e pacotes"],
+                ]
+            ).map(([i, t]) => (
+              <li
+                key={t}
+                className="flex items-center gap-1.5 rounded-full border border-white/10 bg-white/[0.06] px-3 py-1.5 text-violet-50/90 backdrop-blur"
+              >
+                <span aria-hidden>{i}</span>
+                {t}
+              </li>
+            ))}
+          </ul>
         </div>
 
-        <nav className="mt-8 grid grid-cols-2 gap-1 rounded-2xl border border-white/10 bg-black/30 p-1 text-sm font-medium">
+        <nav className="rise-in mt-8 grid grid-cols-2 gap-1 rounded-2xl border border-white/10 bg-black/30 p-1 text-sm font-medium backdrop-blur [animation-delay:120ms]">
           {(["cliente", "gestao"] as const).map((a) => {
             const active = (a === "cliente") === cliente;
             return (
@@ -102,8 +120,8 @@ export default async function EntrarPage({
                 aria-current={active ? "page" : undefined}
                 className={`rounded-xl py-2.5 text-center transition ${
                   active
-                    ? "bg-gradient-to-b from-brand-200 to-brand-400 text-stone-950 shadow"
-                    : "text-stone-400 hover:text-stone-200"
+                    ? "bg-[linear-gradient(110deg,#c026d3,#f43f5e_60%,#fb923c)] text-white shadow-lg shadow-fuchsia-900/40"
+                    : "text-violet-200/70 hover:text-white"
                 }`}
               >
                 {a === "cliente" ? "Sou cliente" : "Gestão do salão"}
@@ -112,7 +130,7 @@ export default async function EntrarPage({
           })}
         </nav>
 
-        <div className="mt-4 rounded-3xl border border-white/10 bg-white/[0.04] p-5 shadow-2xl shadow-black/40 backdrop-blur-xl">
+        <div className="rise-in mt-4 rounded-3xl border border-white/15 bg-white/[0.06] p-5 shadow-2xl shadow-fuchsia-950/50 ring-1 ring-inset ring-white/5 backdrop-blur-2xl [animation-delay:220ms]">
           {!isSupabaseConfigured() && (
             <Banner kind="error">O banco de dados ainda não foi configurado (veja o README).</Banner>
           )}

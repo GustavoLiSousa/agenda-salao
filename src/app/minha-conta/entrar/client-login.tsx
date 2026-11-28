@@ -69,9 +69,9 @@ export function ClientLogin({ next }: { next: string }) {
           <button
             type="button"
             onClick={() => setMode("codigo")}
-            className="rounded-xl border border-white/10 bg-white/[0.03] px-4 py-3 text-sm leading-relaxed text-stone-300 transition hover:border-brand-300/40 hover:text-white"
+            className="rounded-xl border border-white/10 bg-white/[0.03] px-4 py-3 text-sm leading-relaxed text-stone-300 transition hover:border-fuchsia-300/40 hover:text-white"
           >
-            <b className="text-brand-200">Primeiro acesso</b> ou <b className="text-brand-200">esqueceu a senha</b>?
+            <b className="text-fuchsia-200">Primeiro acesso</b> ou <b className="text-fuchsia-200">esqueceu a senha</b>?
             <br />
             Entre com um código no seu e-mail
           </button>

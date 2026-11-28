@@ -4,7 +4,18 @@ import { useId } from "react";
  * Marca do Agenda Salão: uma tesoura aberta desenhada como a letra "A",
  * dentro de um mostrador de relógio (a agenda) com traço fino dourado.
  */
-export function BrandMark({ className = "h-10 w-10", title }: { className?: string; title?: string }) {
+export function BrandMark({
+  className = "h-10 w-10",
+  title,
+  tone = "gold",
+}: {
+  className?: string;
+  title?: string;
+  /** "vivid": versão colorida (rosa, coral e âmbar) usada na tela de entrada */
+  tone?: "gold" | "vivid";
+}) {
+  const c =
+    tone === "vivid" ? ["#fef3c7", "#fb7185", "#a855f7", "#f0abfc"] : ["#f6e9c9", "#d6b57d", "#97703d", "#d6b57d"];
   const id = useId().replace(/[^a-zA-Z0-9_-]/g, "");
   const gold = `gold-${id}`;
   const soft = `soft-${id}`;
@@ -18,13 +29,13 @@ export function BrandMark({ className = "h-10 w-10", title }: { className?: stri
       {title && <title>{title}</title>}
       <defs>
         <linearGradient id={gold} x1="12" y1="6" x2="52" y2="58" gradientUnits="userSpaceOnUse">
-          <stop offset="0" stopColor="#f6e9c9" />
-          <stop offset="0.45" stopColor="#d6b57d" />
-          <stop offset="1" stopColor="#97703d" />
+          <stop offset="0" stopColor={c[0]} />
+          <stop offset="0.45" stopColor={c[1]} />
+          <stop offset="1" stopColor={c[2]} />
         </linearGradient>
         <radialGradient id={soft} cx="32" cy="30" r="30" gradientUnits="userSpaceOnUse">
-          <stop offset="0" stopColor="#d6b57d" stopOpacity="0.18" />
-          <stop offset="1" stopColor="#d6b57d" stopOpacity="0" />
+          <stop offset="0" stopColor={c[3]} stopOpacity="0.18" />
+          <stop offset="1" stopColor={c[3]} stopOpacity="0" />
         </radialGradient>
       </defs>
 
