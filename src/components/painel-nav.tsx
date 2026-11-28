@@ -13,6 +13,7 @@ const I = {
   team: "M12 12a4 4 0 1 0 0-8 4 4 0 0 0 0 8Zm-7 9a7 7 0 0 1 14 0",
   box: "M21 8 12 3 3 8v8l9 5 9-5V8ZM3 8l9 5 9-5M12 13v8",
   star: "M12 3.5l2.6 5.3 5.9.9-4.3 4.1 1 5.8L12 16.9l-5.2 2.7 1-5.8L3.5 9.7l5.9-.9z",
+  chart: "M4 20V10M10 20V4M16 20v-7M22 20H2",
   settings: "M4 6h10M18 6h2M4 12h4M12 12h8M4 18h12M20 18h0M16 4v4M10 10v4M18 16v4",
 };
 
@@ -20,6 +21,7 @@ export const NAV = [
   { href: "/painel", label: "Início", icon: I.home },
   { href: "/painel/agenda", label: "Agenda", icon: I.agenda },
   { href: "/painel/clientes", label: "Clientes", icon: I.clients },
+  { href: "/painel/relatorios", label: "Relatórios", icon: I.chart, desktopOnly: true },
   { href: "/painel/servicos", label: "Serviços", icon: I.services, perm: "precos" },
   { href: "/painel/profissionais", label: "Equipe", icon: I.team, ownerOnly: true },
   { href: "/painel/pacotes", label: "Pacotes", icon: I.box, desktopOnly: true, perm: "pacotes" },

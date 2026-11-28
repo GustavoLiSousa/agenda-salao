@@ -49,7 +49,7 @@ export default async function ProfissionalPage({
     .maybeSingle<Professional & { phone: string | null }>();
   if (!pro) notFound();
 
-  const [{ data: services }, { data: links }, { data: hours }, { data: blocks }] = await Promise.all([
+  const [{ data: services }, { data: links }, { data: hours }, { data: blocks }, { data: commission }] = await Promise.all([
     supabase
       .from("services")
       .select("*")
@@ -71,6 +71,11 @@ export default async function ProfissionalPage({
       .gte("ends_at", new Date().toISOString())
       .order("starts_at")
       .returns<Block[]>(),
+    supabase
+      .from("professional_commissions")
+      .select("pct")
+      .eq("professional_id", id)
+      .maybeSingle<{ pct: number }>(),
   ]);
   const [{ data: member }, { data: emails }] = await Promise.all([
     supabase
@@ -123,6 +128,18 @@ export default async function ProfissionalPage({
             <div className="sm:col-span-2">
               <Field label="Apresentação (aparece para o cliente)" name="bio" defaultValue={pro.bio ?? ""} />
             </div>
+            <Field
+              label="Comissão (%)"
+              name="commission_pct"
+              type="number"
+              inputMode="decimal"
+              min={0}
+              max={100}
+              step="0.5"
+              placeholder="Ex.: 40"
+              defaultValue={commission?.pct != null ? String(Number(commission.pct)) : ""}
+              hint="Só você vê. Usada em Relatórios para calcular quanto pagar."
+            />
           </div>
           <label className="flex items-center gap-2 text-sm">
             <input type="checkbox" name="active" defaultChecked={pro.active} /> Ativo (aparece no link do salão)
