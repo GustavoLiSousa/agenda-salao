@@ -25,6 +25,7 @@ export const NAV = [
   { href: "/painel/pacotes", label: "Pacotes", icon: I.box, desktopOnly: true, perm: "pacotes" },
   { href: "/painel/avaliacoes", label: "Avaliações", icon: I.star, desktopOnly: true, ownerOnly: true },
   { href: "/painel/configuracoes", label: "Ajustes", icon: I.settings, ownerOnly: true },
+  { href: "/painel/auditoria", label: "Auditoria", icon: I.settings, desktopOnly: true, ownerOnly: true },
   { href: "/painel/convites", label: "Convites", icon: I.star, desktopOnly: true, adminOnly: true },
 ];
 
