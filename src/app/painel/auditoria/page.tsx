@@ -34,6 +34,7 @@ const ENTITY: Record<string, string> = {
   salons: "Dados do salão",
   deposit_rules: "Regra de sinal",
   payments: "Pagamento",
+  professional_commissions: "Comissão",
 };
 
 const FIELD: Record<string, string> = {

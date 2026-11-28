@@ -15,7 +15,7 @@ export default async function PainelLayout({ children }: { children: React.React
   const access = { owner: membership?.role !== "professional", perms: membership?.permissions ?? [], admin: !!admin };
   return (
     <div className="min-h-screen pb-24 md:pb-10">
-      <header className="sticky top-0 z-20 border-b border-stone-200/80 bg-[var(--background)]/90 backdrop-blur dark:border-stone-800">
+      <header className="print:hidden sticky top-0 z-20 border-b border-stone-200/80 bg-[var(--background)]/90 backdrop-blur dark:border-stone-800">
         <div className="mx-auto flex max-w-5xl items-center justify-between gap-4 px-4 py-3">
           <Link href="/painel" className="flex items-center gap-2">
             {salon ? (
@@ -46,10 +46,16 @@ export default async function PainelLayout({ children }: { children: React.React
         </div>
       </header>
       <div className="mx-auto max-w-5xl px-4 py-5">
-        {salon && <SalonBanner salon={salon} />}
+        {salon && (
+          <div className="print:hidden">
+            <SalonBanner salon={salon} />
+          </div>
+        )}
         {children}
       </div>
-      <BottomNav access={access} />
+      <div className="print:hidden">
+        <BottomNav access={access} />
+      </div>
     </div>
   );
 }

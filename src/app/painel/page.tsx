@@ -402,9 +402,17 @@ export default async function PainelPage({ searchParams }: { searchParams: Promi
           {/* Atendimentos concluídos no mês */}
           <Card className="p-0">
             <div className="border-b border-stone-100 px-4 py-3 dark:border-stone-800">
-              <h2 className="font-display text-lg font-semibold">
-                {onlyMine ? "Meus atendimentos no mês" : "Atendimentos no mês"}
-              </h2>
+              <div className="flex items-center justify-between gap-2">
+                <h2 className="font-display text-lg font-semibold">
+                  {onlyMine ? "Meus atendimentos no mês" : "Atendimentos no mês"}
+                </h2>
+                <Link
+                  href="/painel/relatorios"
+                  className="shrink-0 rounded-full bg-gradient-to-r from-fuchsia-600 to-rose-500 px-3 py-1 text-xs font-semibold text-white shadow"
+                >
+                  Relatórios ›
+                </Link>
+              </div>
               <p className="text-xs text-stone-500">Concluídos do dia 1º até agora</p>
               <div className={`mt-3 grid gap-2 ${showMoney ? "grid-cols-3" : "grid-cols-2"}`}>
                 <Stat label="No mês" value={String(done.length)} />

@@ -159,6 +159,19 @@ export async function saveProfessional(formData: FormData) {
     .eq("id", id);
   if (error) fail(id, error.message);
 
+  // Comissão (%): vazio apaga
+  const pctRaw = String(formData.get("commission_pct") ?? "").replace(",", ".").trim();
+  if (pctRaw) {
+    const pct = Number(pctRaw);
+    if (!Number.isFinite(pct) || pct < 0 || pct > 100) fail(id, "A comissão deve ser de 0 a 100%.");
+    const { error: ec } = await supabase
+      .from("professional_commissions")
+      .upsert({ professional_id: id, salon_id: membership.salon.id, pct, updated_at: new Date().toISOString() });
+    if (ec) fail(id, ec.message);
+  } else {
+    await supabase.from("professional_commissions").delete().eq("professional_id", id);
+  }
+
   // Serviços que este profissional faz
   const selected = formData.getAll("services").map(String);
   await supabase.from("professional_services").delete().eq("professional_id", id);
