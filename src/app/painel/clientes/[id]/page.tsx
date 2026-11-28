@@ -125,7 +125,7 @@ export default async function ClientePage({
     <main className="mx-auto flex w-full max-w-3xl flex-col gap-5">
       <PageHeader back={{ href: "/painel/clientes", label: "Clientes" }} title="" />
       <div className="-mt-4 flex items-center gap-4">
-        <Avatar name={c.name} size={64} />
+        <Avatar name={c.name} src={c.avatar_url} size={64} />
         <div className="min-w-0 flex-1">
           <h1 className="truncate font-display text-3xl font-semibold">{c.name ?? "Sem nome"}</h1>
           <div className="mt-1 flex flex-wrap items-center gap-2 text-sm text-stone-500">

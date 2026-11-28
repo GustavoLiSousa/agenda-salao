@@ -17,6 +17,8 @@ export type ClientStats = {
   return_every_days_fixed: boolean;
   /** de onde veio o retorno: combinado com o cliente, do último serviço ou média das visitas */
   return_source: "cliente" | "servico" | "media" | null;
+  /** foto do perfil da conta do cliente, quando ele tem conta */
+  avatar_url: string | null;
 };
 
 export const RETURN_SOURCE_LABEL = { cliente: "combinado", servico: "pelo serviço", media: "média das visitas" } as const;
