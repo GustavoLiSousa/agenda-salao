@@ -32,7 +32,7 @@ export default async function NovoSalaoPage({
     .limit(5)
     .returns<JoinRequest[]>();
   const pending = (requests ?? []).filter((r) => r.status === "pending");
-  const equipe = q.modo === "equipe" || pending.length > 0;
+  const equipe = q.modo !== "dono" || pending.length > 0;
 
   const busca = (q.busca ?? "").trim();
   const { data: salons } =
@@ -51,28 +51,31 @@ export default async function NovoSalaoPage({
     <main className="mx-auto flex max-w-md flex-col gap-6 py-6">
       <div>
         <h1 className="font-display text-3xl font-semibold">Vamos começar</h1>
-        <p className="text-sm text-stone-500">Você é dono de um salão ou trabalha em um?</p>
+        <p className="text-sm text-stone-500">
+          Procure o salão onde você trabalha e peça para entrar. Donos de salão entram com o código de convite.
+        </p>
       </div>
 
       <div className="grid grid-cols-2 gap-1 rounded-xl bg-stone-200 p-1 text-center text-sm font-medium dark:bg-stone-800">
         <Link
           href="/painel/novo-salao"
-          className={`rounded-lg py-2 ${!equipe ? "bg-white shadow dark:bg-stone-950" : ""}`}
-        >
-          Criar meu salão
-        </Link>
-        <Link
-          href="/painel/novo-salao?modo=equipe"
           className={`rounded-lg py-2 ${equipe ? "bg-white shadow dark:bg-stone-950" : ""}`}
         >
           Trabalho em um salão
+        </Link>
+        <Link
+          href="/painel/novo-salao?modo=dono"
+          className={`rounded-lg py-2 ${!equipe ? "bg-white shadow dark:bg-stone-950" : ""}`}
+        >
+          Tenho um convite
         </Link>
       </div>
 
       {!equipe ? (
         <>
           <p className="text-sm text-stone-500">
-            Leva 1 minuto. Depois você adiciona serviços, profissionais e horários.
+            Cadastro de salão só com código de convite. Leva 1 minuto, e depois você adiciona serviços, equipe e
+            horários.
           </p>
           <NewSalonForm />
         </>

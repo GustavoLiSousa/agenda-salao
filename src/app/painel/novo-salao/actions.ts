@@ -13,16 +13,19 @@ export async function createSalon(_: NewSalonState, formData: FormData): Promise
   if (whatsapp && !whatsapp.startsWith("55")) whatsapp = `55${whatsapp}`;
 
   if (name.length < 2) return { error: "Informe o nome do salão." };
-  if (!isValidSlug(slug))
-    return { error: "Escolha outro link: use pelo menos 3 letras ou números." };
+  if (!isValidSlug(slug)) return { error: "Escolha outro link: use pelo menos 3 letras ou números." };
   if (whatsapp && (whatsapp.length < 12 || whatsapp.length > 13))
     return { error: "WhatsApp inválido. Use DDD + número, ex.: 11 99999-9999." };
 
   const supabase = await createClient();
+  const code = String(formData.get("code") ?? "")
+    .toUpperCase()
+    .replace(/[^A-Z0-9]/g, "");
   const { error } = await supabase.rpc("create_salon", {
     p_slug: slug,
     p_name: name,
     p_whatsapp: whatsapp || null,
+    p_code: code,
   });
 
   if (error) {

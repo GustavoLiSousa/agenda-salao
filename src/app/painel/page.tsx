@@ -185,6 +185,7 @@ export default async function PainelPage({ searchParams }: { searchParams: Promi
   const week = Array.from({ length: 7 }, (_, i) => addDays(today, i).slice(5));
   const birthdays = clients.filter((c) => c.birthday && week.includes(c.birthday.slice(5)));
 
+  const { data: isAdmin } = await supabase.rpc("is_platform_admin");
   const h = await headers();
   const host = h.get("x-forwarded-host") ?? h.get("host") ?? "";
   const proto = h.get("x-forwarded-proto") ?? "https";
@@ -247,6 +248,9 @@ export default async function PainelPage({ searchParams }: { searchParams: Promi
       <ShareLink slug={salon.slug} salonName={salon.name} />
 
       {/* Avisos que pedem ação */}
+      {isAdmin && (
+        <Notify href="/painel/convites">🎟️ Convites: gere códigos para novos salões entrarem na plataforma</Notify>
+      )}
       {(joinRequests ?? 0) > 0 && (
         <Notify href="/painel/profissionais#pedidos">
           👋 {joinRequests} {joinRequests === 1 ? "pessoa pediu" : "pessoas pediram"} para entrar na equipe
