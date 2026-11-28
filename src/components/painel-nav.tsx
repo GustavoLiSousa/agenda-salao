@@ -5,8 +5,10 @@ import { usePathname } from "next/navigation";
 
 const I = {
   home: "M3 10.5 12 3l9 7.5V20a1 1 0 0 1-1 1h-5v-6H9v6H4a1 1 0 0 1-1-1z",
-  agenda: "M7 3v3M17 3v3M3.5 9h17M5 5h14a1.5 1.5 0 0 1 1.5 1.5V19A1.5 1.5 0 0 1 19 20.5H5A1.5 1.5 0 0 1 3.5 19V6.5A1.5 1.5 0 0 1 5 5Z",
-  clients: "M16 19v-1a4 4 0 0 0-4-4H7a4 4 0 0 0-4 4v1M9.5 10a3.5 3.5 0 1 0 0-7 3.5 3.5 0 0 0 0 7ZM21 19v-1a4 4 0 0 0-3-3.87M15.5 3.13a3.5 3.5 0 0 1 0 6.75",
+  agenda:
+    "M7 3v3M17 3v3M3.5 9h17M5 5h14a1.5 1.5 0 0 1 1.5 1.5V19A1.5 1.5 0 0 1 19 20.5H5A1.5 1.5 0 0 1 3.5 19V6.5A1.5 1.5 0 0 1 5 5Z",
+  clients:
+    "M16 19v-1a4 4 0 0 0-4-4H7a4 4 0 0 0-4 4v1M9.5 10a3.5 3.5 0 1 0 0-7 3.5 3.5 0 0 0 0 7ZM21 19v-1a4 4 0 0 0-3-3.87M15.5 3.13a3.5 3.5 0 0 1 0 6.75",
   services: "M6 4a2.5 2.5 0 1 0 0 5 2.5 2.5 0 0 0 0-5Zm0 11a2.5 2.5 0 1 0 0 5 2.5 2.5 0 0 0 0-5ZM8 8l12 10M8 16 20 6",
   team: "M12 12a4 4 0 1 0 0-8 4 4 0 0 0 0 8Zm-7 9a7 7 0 0 1 14 0",
   box: "M21 8 12 3 3 8v8l9 5 9-5V8ZM3 8l9 5 9-5M12 13v8",
@@ -23,13 +25,16 @@ export const NAV = [
   { href: "/painel/pacotes", label: "Pacotes", icon: I.box, desktopOnly: true, perm: "pacotes" },
   { href: "/painel/avaliacoes", label: "Avaliações", icon: I.star, desktopOnly: true, ownerOnly: true },
   { href: "/painel/configuracoes", label: "Ajustes", icon: I.settings, ownerOnly: true },
+  { href: "/painel/convites", label: "Convites", icon: I.star, desktopOnly: true, adminOnly: true },
 ];
 
-export type NavAccess = { owner: boolean; perms: string[] };
+export type NavAccess = { owner: boolean; perms: string[]; admin?: boolean };
 
 /** O funcionário vê Início, Agenda, Clientes e o que o dono liberou. */
-const visible = ({ owner, perms }: NavAccess) =>
-  NAV.filter((n) => owner || ("perm" in n ? perms.includes(n.perm ?? "") : !("ownerOnly" in n)));
+const visible = ({ owner, perms, admin }: NavAccess) =>
+  NAV.filter((n) =>
+    "adminOnly" in n ? !!admin : owner || ("perm" in n ? perms.includes(n.perm ?? "") : !("ownerOnly" in n)),
+  );
 
 function useActive() {
   const path = usePathname();
@@ -38,7 +43,17 @@ function useActive() {
 
 function Icon({ d }: { d: string }) {
   return (
-    <svg viewBox="0 0 24 24" width="22" height="22" fill="none" stroke="currentColor" strokeWidth="1.7" strokeLinecap="round" strokeLinejoin="round" aria-hidden>
+    <svg
+      viewBox="0 0 24 24"
+      width="22"
+      height="22"
+      fill="none"
+      stroke="currentColor"
+      strokeWidth="1.7"
+      strokeLinecap="round"
+      strokeLinejoin="round"
+      aria-hidden
+    >
       <path d={d} />
     </svg>
   );
@@ -83,7 +98,9 @@ export function BottomNav({ access }: { access: NavAccess }) {
                 on ? "text-stone-900 dark:text-stone-50" : "text-stone-400"
               }`}
             >
-              <span className={`rounded-full px-3 py-0.5 ${on ? "bg-brand-100 text-brand-800 dark:bg-brand-950 dark:text-brand-200" : ""}`}>
+              <span
+                className={`rounded-full px-3 py-0.5 ${on ? "bg-brand-100 text-brand-800 dark:bg-brand-950 dark:text-brand-200" : ""}`}
+              >
                 <Icon d={n.icon} />
               </span>
               {n.label}

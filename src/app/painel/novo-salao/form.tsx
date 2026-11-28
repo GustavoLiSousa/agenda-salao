@@ -16,6 +16,15 @@ export function NewSalonForm() {
   return (
     <form action={action} className="flex flex-col gap-4">
       <Field
+        label="Código de convite"
+        name="code"
+        placeholder="EX.: K7M2Q9XA"
+        autoCapitalize="characters"
+        autoComplete="off"
+        hint="Recebeu o código da equipe do Agenda Salão? Digite aqui para liberar o cadastro do seu salão."
+        required
+      />
+      <Field
         label="Nome do salão"
         name="name"
         placeholder="Barbearia do Zé"

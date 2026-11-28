@@ -8,10 +8,11 @@ import { requireUser } from "@/lib/session";
 export const dynamic = "force-dynamic";
 
 export default async function PainelLayout({ children }: { children: React.ReactNode }) {
-  const { membership } = await requireUser();
+  const { supabase, membership } = await requireUser();
+  const { data: admin } = await supabase.rpc("is_platform_admin");
   const s = membership?.salon;
   const salon = s ? { name: s.name, logo_url: s.logo_url, cover_url: s.cover_url ?? null } : null;
-  const access = { owner: membership?.role !== "professional", perms: membership?.permissions ?? [] };
+  const access = { owner: membership?.role !== "professional", perms: membership?.permissions ?? [], admin: !!admin };
   return (
     <div className="min-h-screen pb-24 md:pb-10">
       <header className="sticky top-0 z-20 border-b border-stone-200/80 bg-[var(--background)]/90 backdrop-blur dark:border-stone-800">
